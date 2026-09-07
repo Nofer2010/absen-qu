@@ -1,0 +1,1652 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Absen Q - Manajemen Absensi</title>
+    <link rel="icon" type="image/png" href="logo.png">
+    <link rel="apple-touch-icon" href="logo.png">
+    <link rel="manifest" href="manifest.json">
+    <meta name="theme-color" content="#007BFF">
+    
+    <!-- Script Chart, QR Code Scanner & SweetAlert2 Modern Popup -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script src="https://unpkg.com/html5-qrcode" type="text/javascript"></script>
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; }
+        body { background-color: #f4f7f6; color: #333; overflow-x: hidden; }
+
+        .table-responsive { width: 100%; overflow-x: auto; -webkit-overflow-scrolling: touch; }
+        table { width: 100%; border-collapse: collapse; margin-top: 10px; white-space: nowrap; }
+        table, th, td { border: 1px solid #dee2e6; }
+        th, td { padding: 12px; text-align: left; font-size: 14px; vertical-align: middle; }
+        th { background-color: #f8f9fa; color: #495057; }
+        
+        .badge { padding: 6px 12px; border-radius: 6px; color: white; font-size: 12px; display: inline-block; font-weight: 600; text-align: center; }
+        .bg-success { background-color: #28a745; }
+        .bg-danger { background-color: #dc3545; }
+        .bg-warning { background-color: #ffc107; color: #000; }
+        .bg-info { background-color: #17a2b8; }
+        
+        .btn-action { padding: 6px 12px; border: none; border-radius: 6px; cursor: pointer; color: white; font-size: 12px; margin-right: 5px; font-weight: 600; transition: 0.2s;}
+        .btn-action:hover { opacity: 0.85; }
+
+        #auth-view { display: flex; justify-content: center; align-items: center; min-height: 100vh; padding: 20px; }
+        .auth-container { background-color: #fff; padding: 30px; border-radius: 12px; box-shadow: 0 10px 25px rgba(0,0,0,0.1); width: 100%; max-width: 420px; }
+        .auth-container h2 { text-align: center; margin-bottom: 20px; color: #007BFF; font-size: 24px; }
+        
+        .logo-container { text-align: center; margin-bottom: 20px; }
+        .logo-container img { max-height: 100px; max-width: 100%; object-fit: contain; margin: 0 auto; display: block; border-radius: 12px; }
+
+        .form-group { margin-bottom: 15px; }
+        .form-group label { display: block; margin-bottom: 5px; font-size: 13px; font-weight: 600; color: #495057; }
+        .form-group input, .form-group select, .form-group textarea { width: 100%; padding: 12px; border: 1px solid #ced4da; border-radius: 8px; font-family: inherit; font-size: 14px; outline: none; transition: border-color 0.2s;}
+        .form-group input:focus, .form-group select:focus, .form-group textarea:focus { border-color: #007BFF; }
+        
+        .password-container { position: relative; }
+        .password-container input { padding-right: 45px; }
+        
+        /* Gaya Modern Ikon Mata Animasi */
+        .toggle-password { 
+            position: absolute; right: 12px; top: 50%; transform: translateY(-50%); 
+            cursor: pointer; width: 22px; height: 22px; color: #888; 
+            display: flex; align-items: center; justify-content: center;
+            transition: color 0.2s ease;
+        }
+        .toggle-password:hover { color: #007BFF; }
+        .toggle-password svg { width: 100%; height: 100%; stroke: currentColor; fill: none; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
+        
+        .btn-auth { width: 100%; padding: 12px; background-color: #007BFF; border: none; color: #fff; font-size: 15px; border-radius: 8px; cursor: pointer; margin-top: 10px; font-weight: bold; box-shadow: 0 4px 10px rgba(0,123,255,0.3); transition: 0.2s;}
+        .btn-auth:hover { opacity: 0.9; }
+        .btn-auth:disabled { background-color: #a0c4ff; cursor: not-allowed; box-shadow: none; }
+        
+        .switch-link { text-align: center; margin-top: 20px; font-size: 14px; color: #6c757d; }
+        .switch-link a { color: #007BFF; text-decoration: none; cursor: pointer; font-weight: bold; }
+        .switch-link a:hover { text-decoration: underline; }
+        
+        #daftar-form-container, #karyawan-login-container { display: none; }
+
+        /* Responsif Dashboard Super Admin & Owner (HP, Tablet, PC, Laptop) */
+        .dashboard-layout { display: none; height: 100vh; flex-direction: row; }
+        .sidebar { width: 260px; background-color: #343a40; color: #fff; display: flex; flex-direction: column; overflow-y: auto; flex-shrink: 0; }
+        .sidebar h2 { text-align: center; padding: 20px; background-color: #212529; font-size: 18px; line-height: 1.4; }
+        .sidebar h2 span { font-size: 11px; color: #adb5bd; font-weight: normal; }
+        .menu { flex-grow: 1; padding-top: 10px; }
+        .menu a { display: block; padding: 15px 20px; color: #adb5bd; text-decoration: none; transition: 0.2s; cursor: pointer; font-size: 14px; border-bottom: 1px solid #454d55; }
+        .menu a:hover, .menu a.active { background-color: #495057; color: #fff; border-left: 4px solid #007BFF; padding-left: 16px; font-weight: 600; }
+        .logout-btn { padding: 15px 20px; background-color: #dc3545; color: white; text-align: center; cursor: pointer; font-weight: bold; transition: 0.2s;}
+        .logout-btn:hover { background-color: #c82333; }
+        
+        .main-content { flex-grow: 1; padding: 25px; overflow-y: auto; background-color: #f4f7f6; }
+        .header h1 { margin-bottom: 20px; font-size: 22px; color: #333; border-bottom: 2px solid #e9ecef; padding-bottom: 10px; font-weight: 700; }
+        
+        .card-container { display: flex; gap: 15px; margin-bottom: 20px; flex-wrap: wrap; }
+        .card { background-color: #fff; padding: 20px; border-radius: 10px; box-shadow: 0 4px 12px rgba(0,0,0,0.05); flex: 1; min-width: 220px; border-left: 5px solid #007BFF;}
+        .card h3 { color: #6c757d; font-size: 13px; margin-bottom: 8px; font-weight: 600; text-transform: uppercase; }
+        .card .value { font-size: 24px; font-weight: bold; color: #212529; }
+        
+        .chart-container { background: #fff; padding: 20px; border-radius: 10px; box-shadow: 0 4px 12px rgba(0,0,0,0.05); margin-bottom: 20px; width: 100%; position: relative; height: 320px; }
+
+        .section-content { display: none; background-color: #fff; padding: 25px; border-radius: 10px; box-shadow: 0 4px 12px rgba(0,0,0,0.05); margin-bottom: 20px; }
+        .section-content.active { display: block; }
+        .section-content h2 { margin-bottom: 20px; font-size: 18px; color: #333; font-weight: 700; }
+
+        @media screen and (max-width: 768px) {
+            .dashboard-layout { flex-direction: column; }
+            .sidebar { width: 100%; height: auto; flex-direction: row; overflow-x: auto; white-space: nowrap; flex-wrap: nowrap; }
+            .sidebar h2 { display: none; }
+            .menu { display: flex; flex-direction: row; padding: 0; }
+            .menu a { padding: 15px; border-bottom: none; border-left: none; }
+            .menu a:hover, .menu a.active { border-left: none; border-bottom: 3px solid #007BFF; padding-left: 15px; }
+            .logout-btn { padding: 15px; }
+            .main-content { padding: 15px; }
+            .card-container { flex-direction: column; }
+        }
+
+        /* ================= DASHBOARD KARYAWAN (KHUSUS LAYAR ANDROID / MOBILE CONTAINER) ================= */
+        #employee-app {
+            display: none; 
+            flex-direction: column; 
+            height: 100vh; 
+            background: #f0f2f5; 
+            max-width: 480px; 
+            margin: 0 auto; 
+            box-shadow: 0 0 25px rgba(0,0,0,0.15); 
+            position: relative;
+            width: 100%;
+        }
+        @media screen and (min-width: 769px) {
+            #employee-app { border-radius: 16px; height: 92vh; margin-top: 4vh; overflow: hidden; border: 1px solid #ddd; }
+        }
+        .emp-header { background: #007BFF; color: white; padding: 20px; text-align: center; border-bottom-left-radius: 20px; border-bottom-right-radius: 20px; box-shadow: 0 4px 12px rgba(0,123,255,0.3);}
+        .emp-header h2 { font-size: 18px; margin-bottom: 4px; font-weight: 700; }
+        .emp-header p { font-size: 13px; opacity: 0.9; }
+        
+        .emp-body { flex: 1; overflow-y: auto; padding: 20px; padding-bottom: 90px; }
+        .emp-section { display: none; animation: fadeIn 0.3s ease-in-out; }
+        .emp-section.active { display: block; }
+        
+        .emp-info-card { background: white; border-radius: 12px; padding: 16px; box-shadow: 0 2px 10px rgba(0,0,0,0.04); margin-bottom: 15px; display: flex; align-items: center; gap: 15px;}
+        .emp-avatar { width: 48px; height: 48px; background: #e7f1ff; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 18px; font-weight: bold; color: #007BFF;}
+        
+        .emp-stats { display: flex; gap: 12px; margin-bottom: 20px; }
+        .stat-box { flex: 1; background: white; padding: 15px; border-radius: 12px; text-align: center; box-shadow: 0 2px 10px rgba(0,0,0,0.04);}
+        .stat-box.masuk h3 { color: #28a745; font-size: 22px; margin-top: 4px;}
+        .stat-box.pulang h3 { color: #dc3545; font-size: 22px; margin-top: 4px;}
+        
+        .btn-absen-big { width: 100%; padding: 18px; border: none; border-radius: 14px; color: white; font-size: 18px; font-weight: bold; margin-bottom: 15px; cursor: pointer; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 8px; transition: transform 0.1s;}
+        .btn-absen-big:active { transform: scale(0.98); }
+        .btn-absen-big:disabled { opacity: 0.6; cursor: not-allowed; }
+        .btn-absen-masuk { background: linear-gradient(135deg, #28a745, #20c997); box-shadow: 0 4px 15px rgba(40,167,69,0.3);}
+        .btn-absen-pulang { background: linear-gradient(135deg, #dc3545, #f87171); box-shadow: 0 4px 15px rgba(220,53,69,0.3);}
+        .btn-absen-libur { background: linear-gradient(135deg, #ffc107, #ff9800); color: #000; box-shadow: 0 4px 15px rgba(255,193,7,0.3);}
+        
+        .location-info { text-align: center; font-size: 12px; color: #666; margin-bottom: 20px; background: #e9ecef; padding: 10px; border-radius: 8px;}
+        
+        /* Animasi GPS Berdenyut */
+        @keyframes pulseGPS {
+            0% { transform: scale(0.95); opacity: 0.7; }
+            50% { transform: scale(1.1); opacity: 1; }
+            100% { transform: scale(0.95); opacity: 0.7; }
+        }
+
+        /* Navigasi Bawah Karyawan Modern SVG */
+        .bottom-nav-emp { position: absolute; bottom: 0; width: 100%; background: #fff; display: flex; justify-content: space-around; padding: 8px 0; box-shadow: 0 -4px 15px rgba(0,0,0,0.06); border-top-left-radius: 16px; border-top-right-radius: 16px; z-index: 10;}
+        .bottom-nav-item { text-align: center; color: #adb5bd; cursor: pointer; flex: 1; padding: 4px 0; font-size: 11px; font-weight: 500; transition: color 0.2s;}
+        .bottom-nav-item.active { color: #007BFF; font-weight: 600; }
+        .bottom-nav-icon { width: 22px; height: 22px; margin: 0 auto 2px auto; display: block; stroke: currentColor; fill: none; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round;}
+        
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: translateY(0); } }
+
+        /* Loader Modern */
+        #global-loader {
+            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(255, 255, 255, 0.9); z-index: 99999;
+            display: flex; justify-content: center; align-items: center;
+            flex-direction: column; transition: opacity 0.3s ease;
+        }
+        .spinner {
+            width: 45px; height: 45px; border: 4px solid #f3f3f3;
+            border-top: 4px solid #007BFF; border-radius: 50%;
+            animation: spin 0.8s linear infinite; margin-bottom: 12px;
+        }
+        @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
+    </style>
+</head>
+<body>
+
+    <!-- Loader Modern -->
+    <div id="global-loader">
+        <div class="spinner"></div>
+        <p style="color: #007BFF; font-weight: 600; font-size: 15px; letter-spacing: 0.5px;">Memproses Sistem...</p>
+    </div>
+
+    <!-- Modal Gambar Bukti Selfie / SKD -->
+    <div id="modal-foto" style="display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.85); z-index:100000; justify-content:center; align-items:center; flex-direction:column; padding: 20px;">
+        <h3 style="color:#fff; margin-bottom:15px; font-size:16px;">📸 Bukti Dokumen / Selfie</h3>
+        <img id="img-modal-foto" style="max-width:90%; max-height:75%; border-radius:8px; border:3px solid #fff; object-fit:contain; box-shadow: 0 8px 25px rgba(0,0,0,0.6);">
+        <button onclick="document.getElementById('modal-foto').style.display='none'" style="margin-top:20px; padding:10px 25px; background:#dc3545; color:white; border:none; border-radius:8px; font-weight:bold; cursor:pointer; font-size:14px;">Tutup Gambar</button>
+    </div>
+
+    <!-- View Expired / Masa Sewa Habis dengan Opsi Pembayaran (DANA & Mayar.id Link Dinamis) -->
+    <div id="expired-view" style="display: none; height: 100vh; flex-direction: column; justify-content: center; align-items: center; background-color: #f4f7f6; padding: 20px; text-align: center; overflow-y: auto;">
+        <div style="background: #fff; padding: 30px; border-radius: 16px; box-shadow: 0 10px 30px rgba(0,0,0,0.08); max-width: 480px; width: 100%; border-top: 5px solid #dc3545; margin: auto;">
+            <h2 style="color: #dc3545; margin-bottom: 10px; font-size: 24px;">Akses Aplikasi Dihentikan!</h2>
+            <p style="font-size: 14px; margin-bottom: 15px; color: #666; line-height: 1.5;">
+                Masa coba gratis (trial) atau masa sewa PT Anda telah berakhir. Silakan pilih paket dan metode pembayaran di bawah ini:
+            </p>
+            
+            <div style="background: #f8f9fa; padding: 15px; border-radius: 10px; font-size: 13px; margin-bottom: 15px; color: #444; text-align: left; border: 1px solid #e9ecef;">
+                <label style="font-weight: bold; display: block; margin-bottom: 6px; color: #333;">Pilih Durasi Paket Perpanjangan:</label>
+                <select id="pilih-paket-expired" onchange="hitungTotalExpired()" style="width: 100%; padding: 10px; border: 1px solid #ced4da; border-radius: 6px; font-size: 14px; margin-bottom: 12px; outline: none;">
+                    <option value="150000" data-bulan="1">1 Bulan — Rp 150.000</option>
+                    <option value="399000" data-bulan="3">3 Bulan — Rp 399.000</option>
+                    <option value="750000" data-bulan="6">6 Bulan — Rp 750.000</option>
+                    <option value="1500000" data-bulan="12">12 Bulan — Rp 1.500.000</option>
+                </select>
+                <div style="background: #e7f1ff; padding: 10px; border-radius: 6px; display: flex; justify-content: space-between; align-items: center; border: 1px solid #b6d4fe;">
+                    <span style="font-weight: bold; color: #0056b3;">Total Tagihan:</span>
+                    <span id="total-harga-expired" style="font-size: 16px; font-weight: bold; color: #0056b3;">Rp 150.000</span>
+                </div>
+            </div>
+
+            <div style="margin-bottom: 20px; text-align: left;">
+                <label style="font-size: 13px; font-weight: 600; color: #333; display: block; margin-bottom: 8px;">Pilih Opsi Pembayaran:</label>
+                <div onclick="bayarViaDanaExpired()" style="background: #fff; border: 1px solid #b6d4fe; padding: 12px; border-radius: 8px; margin-bottom: 10px; cursor: pointer; transition: 0.2s;" onmouseover="this.style.background='#f0f4ff'" onmouseout="this.style.background='#fff'">
+                    <strong style="color: #0d6efd; font-size: 14px;">📲 Opsi Pembayaran Via DANA</strong>
+                    <p style="font-size: 13px; color: #333; margin-top: 4px;">Nomor DANA: <strong>0857-1913-4016</strong> (a.n. Ferdian Ocktavianto)</p>
+                    <p style="font-size: 11px; color: #0d6efd; margin-top: 4px; font-weight: bold;">👉 Klik di sini untuk Transfer DANA & Konfirmasi ke WhatsApp</p>
+                </div>
+
+                <a id="btn-mayar-expired" href="https://fer-tech.myr.id/pl/perpanjangan-sewa-absen-qu-1-bulan" target="_blank" style="display: block; text-decoration: none; background-color: #28a745; color: white; padding: 12px; border-radius: 8px; text-align: center; font-weight: bold; font-size: 14px; box-shadow: 0 4px 10px rgba(40,167,69,0.3);">
+                    💳 Bayar Instan via Link MAYAR.id
+                </a>
+            </div>
+
+            <p style="font-size: 12px; color: #888; margin-top: 5px;">Konfirmasi & Bantuan WhatsApp: <strong>6285719134016</strong></p>
+            <button class="btn-auth btn-logout-global" style="background-color: #6c757d; margin-top: 15px;">Keluar Akun (Log Out)</button>
+        </div>
+    </div>
+
+    <!-- Authentication View -->
+    <div id="auth-view" style="display: none;">
+        
+        <!-- Login Owner -->
+        <div class="auth-container" id="login-form-container">
+            <div class="logo-container"><img src="logo.png" alt="Logo"></div>
+            <h2>Login Absen Q</h2>
+            <form id="form-login">
+                <div class="form-group"><label>Email</label><input type="email" id="login-email" required placeholder="owner@pt.com"></div>
+                <div class="form-group password-container">
+                    <label>Password</label>
+                    <input type="password" id="login-password" required placeholder="••••••••">
+                    <span class="toggle-password" id="btn-toggle-pwd-login" title="Sembunyikan/Tampilkan Password">
+                        <svg viewBox="0 0 24 24">
+                            <path class="eye-open" d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path>
+                            <circle class="eye-open" cx="12" cy="12" r="3"></circle>
+                            <path class="eye-closed" d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19m-6.72-1.07a3 3 0 1 1-4.24-4.24M1 1l22 22" style="display:none;"></path>
+                        </svg>
+                    </span>
+                </div>
+                <button type="submit" class="btn-auth" id="btn-login">Masuk</button>
+            </form>
+            <div class="switch-link">Belum punya akun? <a id="link-ke-daftar">Daftar</a><br><br><span style="color: #666;">Masuk sebagai</span> <a id="link-ke-kar-login">Karyawan</a></div>
+        </div>
+
+        <!-- Daftar Owner -->
+        <div class="auth-container" id="daftar-form-container">
+            <div class="logo-container"><img src="logo.png" alt="Logo"></div>
+            <h2>Form Pendaftaran PT</h2>
+            <form id="form-daftar">
+                <div class="form-group"><label>Nama Depan</label><input type="text" id="reg-nama-depan" required></div>
+                <div class="form-group"><label>Nama Belakang</label><input type="text" id="reg-nama-belakang" required></div>
+                <div class="form-group"><label>Nama Perusahaan / PT</label><input type="text" id="reg-pt" required></div>
+                <div class="form-group"><label>Alamat</label><input type="text" id="reg-alamat" required></div>
+                <div class="form-group"><label>No Telepon / WhatsApp</label><input type="tel" id="reg-tlp" required></div>
+                <div class="form-group"><label>Email Aktif</label><input type="email" id="reg-email" required></div>
+                <div class="form-group password-container">
+                    <label>Password (Min. 6 Karakter)</label>
+                    <input type="password" id="reg-password" required minlength="6">
+                    <span class="toggle-password" id="btn-toggle-pwd-reg" title="Sembunyikan/Tampilkan Password">
+                        <svg viewBox="0 0 24 24">
+                            <path class="eye-open" d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path>
+                            <circle class="eye-open" cx="12" cy="12" r="3"></circle>
+                            <path class="eye-closed" d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19m-6.72-1.07a3 3 0 1 1-4.24-4.24M1 1l22 22" style="display:none;"></path>
+                        </svg>
+                    </span>
+                </div>
+                <button type="submit" class="btn-auth" id="btn-daftar">Daftar</button>
+            </form>
+            <div class="switch-link">Sudah punya akun? <a id="link-ke-login">Masuk</a></div>
+        </div>
+
+        <!-- Login Karyawan (Sesuai Permintaan: Nama PT terdaftar & ID Karyawan terdaftar) -->
+        <div class="auth-container" id="karyawan-login-container" style="border-top: 5px solid #28a745;">
+            <div class="logo-container"><img src="logo.png" alt="Logo"></div>
+            <h2>Absen Karyawan</h2>
+            <p style="text-align: center; color: #666; font-size: 13px; margin-bottom: 15px;">Silakan scan QR PT atau masukkan kode untuk absen</p>
+            
+            <div id="qr-reader" style="width: 100%; display: none; margin-bottom: 15px;"></div>
+            <button type="button" class="btn-auth" id="btn-start-scan" style="background-color: #17a2b8; margin-bottom: 15px;">📷 Scan QR Code PT</button>
+
+            <form id="form-login-karyawan">
+                <div class="form-group" id="group-kode-pt" style="display: none;">
+                    <label id="label-kode-pt">Nama Perusahaan (PT Terdaftar Owner)</label>
+                    <input type="text" id="login-kar-pt" required readonly style="background-color: #e9ecef; font-weight: bold; color: #0056b3;">
+                </div>
+                <div class="form-group" id="group-id-kar" style="display: none;">
+                    <label>ID Karyawan</label>
+                    <input type="text" id="login-kar-id" required placeholder="Contoh: KRY-001">
+                </div>
+                <button type="submit" class="btn-auth" style="background-color: #28a745; display:none;" id="btn-login-kar">Masuk Absensi</button>
+            </form>
+            <div class="switch-link" id="balik-ke-owner"><a id="link-ke-login-2">← Kembali ke Login Owner</a></div>
+            <div class="switch-link" id="input-manual-pt" style="margin-top: 8px;"><a style="color: #666; text-decoration: underline; cursor:pointer; font-size: 12px;">Atau input Kode PT manual</a></div>
+        </div>
+    </div>
+
+    <!-- Dashboard Super Admin -->
+    <div id="superadmin-view" class="dashboard-layout">
+        <div class="sidebar">
+            <h2>Absen Q <br><span>Super Admin</span></h2>
+            <div class="menu">
+                <a class="nav-link-sa active" data-target="sa-dashboard">Dashboard Overview</a>
+                <a class="nav-link-sa" data-target="sa-kelola-klien">Kelola Klien</a>
+            </div>
+            <a class="logout-btn btn-logout-global">Log Out</a>
+        </div>
+        <div class="main-content">
+            <div class="header"><h1 id="sa-page-title">Dashboard Overview</h1></div>
+            
+            <div id="sa-dashboard" class="section-content sa-section active">
+                <div class="card-container">
+                    <div class="card"><h3>Total Klien Aktif</h3><div class="value" id="total-klien-aktif">0</div></div>
+                    <div class="card"><h3 style="color: #28a745;">Total Pendapatan Sewa</h3><div class="value" id="sa-total-pendapatan">Rp 0</div></div>
+                </div>
+            </div>
+
+            <div id="sa-kelola-klien" class="section-content sa-section">
+                <h2>Daftar Semua Klien PT</h2>
+                <div class="table-responsive">
+                    <table>
+                        <thead>
+                            <tr>
+                                <th>Nama PT</th>
+                                <th>Owner</th>
+                                <th>Email</th>
+                                <th>No Telepon</th>
+                                <th>Status</th>
+                                <th>Sisa Masa Sewa</th>
+                                <th>Perpanjang Sewa</th>
+                                <th>Aksi Suspend</th>
+                            </tr>
+                        </thead>
+                        <tbody id="tabel-data-klien"><tr><td colspan="8" style="text-align: center;">Memuat data...</td></tr></tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Dashboard Owner (Klien) -->
+    <div id="owner-view" class="dashboard-layout">
+        <div class="sidebar">
+            <h2>Dashboard PT <br><span id="owner-company-name">Memuat...</span></h2>
+            <div class="menu">
+                <a class="nav-link-ow active" data-target="ow-dashboard">Grafik & Overview</a>
+                <a class="nav-link-ow" data-target="ow-laporan">Laporan Absensi</a>
+                <a class="nav-link-ow" data-target="ow-karyawan">Data Karyawan</a>
+                <a class="nav-link-ow" data-target="ow-data-absen">Rekap Absensi</a>
+                <a class="nav-link-ow" data-target="ow-penggajian">Data Penggajian</a>
+                <a class="nav-link-ow" data-target="ow-slip">Buat Slip Gaji</a>
+                <a class="nav-link-ow" data-target="ow-perpanjang">Perpanjang Sewa</a>
+                <a class="nav-link-ow" data-target="ow-link">Akses Karyawan (QR)</a>
+            </div>
+            <a class="logout-btn btn-logout-global">Log Out</a>
+        </div>
+        
+        <div class="main-content">
+            <div id="peringatan-sewa" style="display:none; background:#fff3cd; color:#856404; padding:15px 20px; border-radius:10px; margin-bottom:20px; border: 1px solid #ffeeba; box-shadow: 0 4px 12px rgba(0,0,0,0.04);">
+                <div style="font-weight: bold; font-size: 15px; margin-bottom: 5px;">⚠️ Peringatan: Masa Sewa Anda Segera Berakhir!</div>
+                <div style="font-size: 13px; margin-bottom: 10px;">Sistem akan dikunci otomatis dalam waktu: <span id="waktu-mundur-sewa" style="color: #dc3545; font-weight: bold; font-size: 15px;"></span></div>
+                <div style="display: flex; gap: 10px; flex-wrap: wrap;">
+                    <a href="https://fer-tech.myr.id/pl/perpanjangan-sewa-absen-qu-1-bulan" target="_blank" style="background: #28a745; color: white; padding: 8px 14px; border-radius: 6px; text-decoration: none; font-size: 13px; font-weight: bold;">💳 Opsi Pembayaran Via LINK (MAYAR.id)</a>
+                    <span style="background: #e7f1ff; color: #0d6efd; padding: 8px 14px; border-radius: 6px; font-size: 13px; font-weight: bold; border: 1px solid #b6d4fe;">📲 Opsi Pembayaran Via DANA: 085719134016</span>
+                </div>
+            </div>
+
+            <div class="header"><h1 id="ow-page-title">Grafik & Overview</h1></div>
+            
+            <div id="ow-dashboard" class="section-content ow-section active">
+                <div class="card-container">
+                    <div class="card"><h3>Karyawan Masuk Hari Ini</h3><div class="value" id="ow-stat-masuk" style="color:#28a745;">0 Orang</div></div>
+                    <div class="card"><h3>Karyawan Sakit/Izin</h3><div class="value" id="ow-stat-izin" style="color:#dc3545;">0 Orang</div></div>
+                    <div class="card"><h3>Total Pengeluaran Gaji</h3><div class="value" id="ow-stat-gaji" style="color:#17a2b8;">Rp 0</div></div>
+                </div>
+                <div class="chart-container"><canvas id="grafikAbsensi"></canvas></div>
+            </div>
+
+            <div id="ow-laporan" class="section-content ow-section">
+                <h2>Laporan Absensi (Masuk & Pulang)</h2>
+                <div class="table-responsive">
+                    <table>
+                        <thead><tr><th>Tanggal</th><th>Nama | ID</th><th>Waktu Masuk</th><th>Waktu Keluar</th><th>Keterangan</th></tr></thead>
+                        <tbody id="tabel-laporan-owner"><tr><td colspan="5" style="text-align: center;">Belum ada data absensi karyawan</td></tr></tbody>
+                    </table>
+                </div>
+
+                <h2 style="margin-top: 30px;">Pengajuan Cuti / Izin / Sakit</h2>
+                <div class="table-responsive">
+                    <table>
+                        <thead><tr><th>Tanggal Izin</th><th>Nama | ID</th><th>Tipe & Alasan</th><th>Status</th><th>Aksi Owner</th></tr></thead>
+                        <tbody id="tabel-cuti-owner"><tr><td colspan="5" style="text-align: center;">Belum ada pengajuan cuti/izin/sakit</td></tr></tbody>
+                    </table>
+                </div>
+            </div>
+
+            <div id="ow-karyawan" class="section-content ow-section">
+                <h2>Registrasi Karyawan Baru</h2>
+                <form id="form-add-karyawan" style="margin-bottom: 30px; padding: 20px; border: 1px solid #e9ecef; border-radius: 10px; background: #f8f9fa;">
+                    <div style="display: flex; gap: 15px; flex-wrap: wrap;">
+                        <div class="form-group" style="flex: 1; min-width: 200px;"><label>Nama Depan</label><input type="text" id="kar-nama-depan" required></div>
+                        <div class="form-group" style="flex: 1; min-width: 200px;"><label>Nama Belakang</label><input type="text" id="kar-nama-belakang" required></div>
+                    </div>
+                    <div class="form-group">
+                        <label>Jabatan</label>
+                        <select id="kar-jabatan">
+                            <option value="Mandor">Mandor</option><option value="Tukang">Tukang</option><option value="Kenek">Kenek</option>
+                            <option value="Admin">Admin</option><option value="Kasir">Kasir</option><option value="Gudang">Gudang</option>
+                            <option value="Sales">Sales</option><option value="Kurir">Kurir</option><option value="Staff">Staff</option>
+                        </select>
+                    </div>
+                    <div style="display: flex; gap: 15px; flex-wrap: wrap;">
+                        <div class="form-group" style="flex: 1; min-width: 200px;"><label>Email</label><input type="email" id="kar-email" required></div>
+                        <div class="form-group" style="flex: 1; min-width: 200px;"><label>Username</label><input type="text" id="kar-username" required></div>
+                    </div>
+                    <div class="form-group"><label>ID Karyawan</label><input type="text" id="kar-id" required placeholder="Contoh: KRY-001"></div>
+                    <button type="submit" class="btn-auth" id="btn-simpan-kar">Simpan Karyawan</button>
+                </form>
+
+                <h2>Daftar Karyawan Terdaftar</h2>
+                <div class="table-responsive">
+                    <table>
+                        <thead><tr><th>Nama</th><th>Username</th><th>ID Karyawan</th><th>Jabatan</th><th>Aksi</th></tr></thead>
+                        <tbody id="tabel-data-karyawan"><tr><td colspan="5" style="text-align: center;">Memuat data karyawan...</td></tr></tbody>
+                    </table>
+                </div>
+            </div>
+
+            <div id="ow-data-absen" class="section-content ow-section">
+                <h2>Rekap Absensi Karyawan Lengkap</h2>
+                <div class="form-group" style="max-width: 280px; margin-bottom: 15px;">
+                    <label><strong>Filter Karyawan</strong></label>
+                    <select id="filter-karyawan-rekap" onchange="window.terapkanFilterRekap()"><option value="ALL">Semua Karyawan</option></select>
+                </div>
+                <div style="display: flex; gap: 10px; margin-bottom: 15px; flex-wrap: wrap;">
+                    <button class="btn-auth" style="width: auto; margin: 0; background-color: #28a745;" onclick="window.unduhCSVRekap()">📥 Download CSV</button>
+                    <button class="btn-auth" style="width: auto; margin: 0; background-color: #17a2b8;" onclick="window.cetakRekapPDF()">🖨️ Cetak PDF</button>
+                </div>
+                <div class="table-responsive">
+                    <table id="tabel-export-rekap">
+                        <thead><tr><th>Tanggal</th><th>Nama Karyawan</th><th>Jabatan</th><th>Jam Masuk</th><th>Jam Pulang</th><th>Lokasi</th><th>Foto Selfie</th></tr></thead>
+                        <tbody id="tabel-rekap-owner"><tr><td colspan="7" style="text-align: center;">Data kosong</td></tr></tbody>
+                    </table>
+                </div>
+            </div>
+
+            <div id="ow-penggajian" class="section-content ow-section">
+                <h2>Data Penggajian Karyawan</h2>
+                <div class="form-group" style="width: 200px; margin-bottom: 15px;"><label>Filter Bulan</label><input type="month" value="2026-09"></div>
+                <div class="table-responsive">
+                    <table>
+                        <thead><tr><th>Nama Karyawan</th><th>ID</th><th>Jabatan</th><th>Kehadiran Efektif</th><th>Tipe Gaji</th><th>Nominal (Rp)</th><th>Total Terima</th><th>Aksi</th></tr></thead>
+                        <tbody id="tabel-penggajian-owner"><tr><td colspan="8" style="text-align: center;">Sinkronisasi Karyawan diperlukan...</td></tr></tbody>
+                    </table>
+                </div>
+            </div>
+
+            <div id="ow-slip" class="section-content ow-section">
+                <h2>Buat Slip Gaji</h2>
+                <div class="form-group"><label>Pilih Karyawan</label><select id="select-karyawan-slip"><option>Memuat karyawan...</option></select></div>
+                <button class="btn-auth" style="width: auto;" onclick="window.cetakSlipGajiPDF()">Cetak Slip Gaji (PDF)</button>
+            </div>
+
+            <div id="ow-perpanjang" class="section-content ow-section">
+                <h2>Perpanjangan Masa Sewa Sistem</h2>
+                <p style="font-size: 14px; color: #666; margin-bottom: 20px;">Pilih durasi paket dan metode pembayaran di bawah ini untuk memperpanjang masa aktif PT Anda:</p>
+                
+                <div style="background: #f8f9fa; padding: 20px; border-radius: 10px; border: 1px solid #e9ecef; max-width: 500px;">
+                    <div style="margin-bottom: 20px;">
+                        <label style="font-size: 13px; font-weight: bold; display: block; margin-bottom: 6px; color: #333;">Pilih Durasi Paket Langganan:</label>
+                        <select id="pilih-paket-owner" onchange="hitungTotalOwner()" style="width: 100%; padding: 12px; border: 1px solid #ced4da; border-radius: 8px; font-size: 14px; margin-bottom: 12px; outline: none;">
+                            <option value="150000" data-bulan="1">1 Bulan — Rp 150.000</option>
+                            <option value="399000" data-bulan="3">3 Bulan — Rp 399.000</option>
+                            <option value="750000" data-bulan="6">6 Bulan — Rp 750.000</option>
+                            <option value="1500000" data-bulan="12">12 Bulan — Rp 1.500.000</option>
+                        </select>
+
+                        <div style="background: #e7f1ff; padding: 12px 15px; border-radius: 8px; display: flex; justify-content: space-between; align-items: center; border: 1px solid #b6d4fe;">
+                            <span style="font-weight: bold; color: #0056b3; font-size: 14px;">Total Tagihan Pembayaran:</span>
+                            <span id="total-harga-owner" style="font-size: 18px; font-weight: bold; color: #0056b3;">Rp 150.000</span>
+                        </div>
+                    </div>
+
+                    <div style="margin-bottom: 15px;">
+                        <label style="font-size: 13px; font-weight: bold; display: block; margin-bottom: 6px;">Opsi Pembayaran Via DANA:</label>
+                        <div onclick="bayarViaDanaOwner()" style="background: #fff; border: 1px solid #b6d4fe; padding: 12px; border-radius: 8px; cursor: pointer; transition: 0.2s;" onmouseover="this.style.background='#f0f4ff'" onmouseout="this.style.background='#fff'">
+                            <p style="font-size: 13px; color: #333;">Nomor DANA: <strong>0857-1913-4016</strong></p>
+                            <p style="font-size: 12px; color: #555; margin-top: 2px;">Atas Nama: <strong>Ferdian Ocktavianto</strong></p>
+                            <p style="font-size: 12px; color: #0d6efd; margin-top: 6px; font-weight: bold;">👉 Klik di sini untuk Transfer DANA & Lanjut ke WhatsApp</p>
+                        </div>
+                    </div>
+
+                    <div>
+                        <label style="font-size: 13px; font-weight: bold; display: block; margin-bottom: 6px;">Opsi Pembayaran Via LINK (MAYAR.id):</label>
+                        <a id="btn-mayar-owner" href="https://fer-tech.myr.id/pl/perpanjangan-sewa-absen-qu-1-bulan" target="_blank" style="display: block; text-decoration: none; background-color: #28a745; color: white; padding: 12px; border-radius: 8px; text-align: center; font-weight: bold; font-size: 14px; box-shadow: 0 4px 10px rgba(40,167,69,0.3);">
+                            💳 Bayar Instan via Link MAYAR.id
+                        </a>
+                    </div>
+                </div>
+            </div>
+
+            <div id="ow-link" class="section-content ow-section">
+                <h2>Akses Absensi Karyawan (QR Code)</h2>
+                <p style="font-size: 14px; color: #666; margin-bottom: 15px;">Tunjukkan atau cetak QR Code ini agar karyawan bisa scan langsung saat login di HP mereka.</p>
+                <div style="text-align: center; margin-bottom: 25px;">
+                    <img id="qr-code-pt-img" src="" alt="QR Code PT" style="border: 2px solid #007BFF; padding: 8px; border-radius: 10px; max-width: 220px; background: #fff;">
+                </div>
+                <div class="form-group"><label>Link Absen Khusus PT Anda</label><input type="text" id="link-absen-pt" readonly style="background: #e9ecef;"></div>
+                <button class="btn-auth" style="width: auto; background-color: #28a745;" onclick="navigator.clipboard.writeText(document.getElementById('link-absen-pt').value); Swal.fire('Berhasil!', 'Link berhasil disalin ke clipboard.', 'success');">Salin Link Akses</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Dashboard Karyawan (Khusus Tampilan Mobile/Android) -->
+    <div id="employee-app">
+        <div class="emp-header">
+            <h2 id="app-kar-nama">Nama Karyawan</h2>
+            <p id="app-kar-tgl">Memuat Tanggal...</p>
+        </div>
+
+        <div class="emp-body">
+            <!-- 1. Home / Beranda -->
+            <div id="emp-home" class="emp-section active">
+                <div class="emp-info-card">
+                    <div class="emp-avatar" id="app-kar-inisial">A</div>
+                    <div>
+                        <strong style="display: block; font-size: 15px;">ID: <span id="app-kar-id">-</span></strong>
+                        <span style="font-size: 12px; color: #666; font-weight: bold;" id="app-pt-nama">PT -</span>
+                    </div>
+                </div>
+
+                <div class="emp-stats">
+                    <div class="stat-box masuk"><span style="font-size: 11px; color: #666;">Total Hari Kerja</span><h3 id="stat-masuk">0</h3></div>
+                    <div class="stat-box pulang"><span style="font-size: 11px; color: #666;">Sakit / Izin / Cuti</span><h3 id="stat-pulang">0</h3></div>
+                </div>
+
+                <div class="emp-info-card" style="flex-direction: column; align-items: flex-start; background: #fff; border-left: 4px solid #007BFF;">
+                    <h3 style="font-size: 15px; margin-bottom: 6px; font-weight: 700; color: #007BFF;">Selamat Datang di Absen Q</h3>
+                    <p style="font-size: 13px; color: #555; line-height: 1.5;">Gunakan menu navigasi di bawah untuk melakukan absensi, mengajukan cuti atau izin, serta melihat riwayat rekap kehadiran bulanan Anda secara berkala.</p>
+                </div>
+            </div>
+
+            <!-- 2. Absen (Pembaruan Ikon SVG Modern & Real-Time) -->
+            <div id="emp-absen" class="emp-section">
+                <h3 style="text-align: center; margin-bottom: 15px; font-size: 16px;">Absensi Harian (Kamera & GPS)</h3>
+                
+                <div class="location-info" style="display: flex; align-items: center; justify-content: center; gap: 8px;">
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#007BFF" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="animation: pulseGPS 1.5s infinite;">
+                        <path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"></path>
+                        <circle cx="12" cy="10" r="3"></circle>
+                    </svg>
+                    <div style="text-align: left;">
+                        <strong style="font-size: 11px; display: block; color: #444;">Status GPS Real-Time:</strong>
+                        <span id="lokasi-gps" style="color: #007BFF; font-weight: bold;">Mencari lokasi...</span>
+                    </div>
+                </div>
+
+                <button class="btn-absen-big btn-absen-masuk" id="btn-absen-masuk">
+                    <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="5"></circle><line x1="12" y1="1" x2="12" y2="3"></line><line x1="12" y1="21" x2="12" y2="23"></line><line x1="4.22" y1="4.22" x2="5.64" y2="5.64"></line><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"></line><line x1="1" y1="12" x2="3" y2="12"></line><line x1="21" y1="12" x2="23" y2="12"></line><line x1="4.22" y1="19.78" x2="5.64" y2="18.36"></line><line x1="18.36" y1="5.64" x2="19.78" y2="4.22"></line></svg>
+                    Absen MASUK
+                </button>
+                
+                <button class="btn-absen-big btn-absen-pulang" id="btn-absen-pulang">
+                    <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"></path></svg>
+                    Absen PULANG
+                </button>
+
+                <button class="btn-absen-big btn-absen-libur" id="btn-absen-libur">
+                    <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"></rect><line x1="16" y1="2" x2="16" y2="6"></line><line x1="8" y1="2" x2="8" y2="6"></line><line x1="3" y1="10" x2="21" y2="10"></line></svg>
+                    LIBUR
+                </button>
+            </div>
+
+            <!-- 3. Cuti & Form Pengajuan -->
+            <div id="emp-cuti" class="emp-section">
+                <h3 style="margin-bottom: 15px; font-size: 16px; font-weight: 700; color: #333;">Form Pengajuan Cuti / Izin / Sakit</h3>
+                <div class="emp-info-card" style="flex-direction: column; align-items: flex-start;">
+                    <label style="font-size:12px; color:#666; margin-bottom:3px;">Pilih Tipe Pengajuan</label>
+                    <select id="input-tipe-cuti" style="width: 100%; border: 1px solid #ced4da; padding: 10px; border-radius: 8px; margin-bottom: 10px; background-color: #fff;">
+                        <option value="Izin">Izin</option>
+                        <option value="Sakit">Sakit (Upload SKD)</option>
+                        <option value="Cuti" id="opt-cuti" disabled>Cuti (Min. 1 Tahun)</option>
+                    </select>
+
+                    <label style="font-size:12px; color:#666; margin-bottom:3px;">Tanggal Pengajuan</label>
+                    <input type="date" id="input-tgl-cuti" style="width: 100%; border: 1px solid #ced4da; padding: 10px; border-radius: 8px; margin-bottom: 10px;">
+                    
+                    <textarea id="input-alasan-cuti" placeholder="Tulis alasan izin / cuti..." rows="2" style="width: 100%; border: 1px solid #ced4da; padding: 10px; border-radius: 8px; margin-bottom: 10px;"></textarea>
+                    
+                    <div id="wrap-skd" style="display:none; width: 100%; margin-bottom: 10px; background: #fff3cd; padding: 10px; border-radius: 8px; border: 1px solid #ffeeba;">
+                        <label style="font-size:12px; font-weight:bold; color:#856404; display:block; margin-bottom:4px;">Lampirkan Surat Dokter (SKD)</label>
+                        <input type="file" id="input-skd" accept="image/*" capture="environment" style="width: 100%; font-size:12px;">
+                    </div>
+
+                    <button class="btn-auth" id="btn-kirim-cuti" style="margin-top: 0; padding: 12px; font-size: 14px; background: #007BFF;">Kirim Pengajuan</button>
+                </div>
+
+                <h3 style="margin: 20px 0 10px 0; font-size: 15px; font-weight: 700; color: #333;">Status Pengajuan Terakhir</h3>
+                <div style="background: white; border-radius: 12px; padding: 15px; box-shadow: 0 2px 10px rgba(0,0,0,0.04);">
+                    <div id="status-cuti-karyawan" style="font-size: 13px; color: #666;">Belum ada pengajuan cuti atau izin.</div>
+                </div>
+            </div>
+
+            <!-- 4. History (Riwayat Absensi Real / Murni Data Masuk) -->
+            <div id="emp-history" class="emp-section">
+                <h3 style="margin-bottom: 12px; font-size: 16px; font-weight: 700;">Riwayat Absensi Karyawan</h3>
+                
+                <div style="background: white; padding: 15px; border-radius: 12px; box-shadow: 0 2px 10px rgba(0,0,0,0.04); margin-bottom: 15px;">
+                    <div style="display: flex; gap: 10px; margin-bottom: 10px;">
+                        <div style="flex: 1;">
+                            <label style="font-size: 11px; font-weight: bold; color: #666; display: block; margin-bottom: 3px;">Tahun</label>
+                            <select id="filter-history-tahun" style="width: 100%; padding: 8px; border: 1px solid #ced4da; border-radius: 6px; font-size: 13px;">
+                                <!-- Tahun terisi otomatis secara real-time -->
+                            </select>
+                        </div>
+                        <div style="flex: 1;">
+                            <label style="font-size: 11px; font-weight: bold; color: #666; display: block; margin-bottom: 3px;">Bulan</label>
+                            <select id="filter-history-bulan" style="width: 100%; padding: 8px; border: 1px solid #ced4da; border-radius: 6px; font-size: 13px;">
+                                <option value="01">Januari</option><option value="02">Februari</option><option value="03">Maret</option>
+                                <option value="04">April</option><option value="05">Mei</option><option value="06">Juni</option>
+                                <option value="07">Juli</option><option value="08">Agustus</option><option value="09" selected>September</option>
+                                <option value="10">Oktober</option><option value="11">November</option><option value="12">Desember</option>
+                            </select>
+                        </div>
+                    </div>
+                    <button class="btn-auth" id="btn-filter-history" style="margin-top: 0; padding: 9px; font-size: 13px;">Filter Data</button>
+                </div>
+
+                <div style="background: white; border-radius: 12px; padding: 12px; box-shadow: 0 2px 10px rgba(0,0,0,0.04);">
+                    <p id="info-rekap-periode" style="font-size: 12px; color: #666; margin-bottom: 10px; text-align: center; font-weight: bold;"></p>
+                    <div class="table-responsive">
+                        <table>
+                            <thead>
+                                <tr>
+                                    <th>Periode</th>
+                                    <th>Masuk</th>
+                                    <th>Pulang</th>
+                                    <th>Keterangan</th>
+                                </tr>
+                            </thead>
+                            <tbody id="tabel-history-karyawan">
+                                <tr><td colspan="4" style="text-align: center; color: #666;">Memuat data...</td></tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Menu Navigasi Bawah Karyawan Modern & Rapi -->
+        <div class="bottom-nav-emp">
+            <div class="bottom-nav-item active" data-target="emp-home">
+                <svg class="bottom-nav-icon" viewBox="0 0 24 24"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"></path><polyline points="9 22 9 12 15 12 15 22"></polyline></svg>
+                Home
+            </div>
+            <div class="bottom-nav-item" data-target="emp-absen">
+                <svg class="bottom-nav-icon" viewBox="0 0 24 24"><path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"></path><circle cx="12" cy="13" r="4"></circle></svg>
+                Absen
+            </div>
+            <div class="bottom-nav-item" data-target="emp-cuti">
+                <svg class="bottom-nav-icon" viewBox="0 0 24 24"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path><polyline points="14 2 14 8 20 8"></polyline><line x1="16" y1="13" x2="8" y2="13"></line><line x1="16" y1="17" x2="8" y2="17"></line><polyline points="10 9 9 9 8 9"></polyline></svg>
+                Cuti
+            </div>
+            <div class="bottom-nav-item" data-target="emp-history">
+                <svg class="bottom-nav-icon" viewBox="0 0 24 24"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path><polyline points="14 2 14 8 20 8"></polyline><line x1="16" y1="13" x2="8" y2="13"></line><line x1="16" y1="17" x2="8" y2="17"></line><polyline points="10 9 9 9 8 9"></polyline></svg>
+                History
+            </div>
+            <div class="bottom-nav-item" id="btn-logout-karyawan">
+                <svg class="bottom-nav-icon" style="stroke: #dc3545;" viewBox="0 0 24 24"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"></path><polyline points="16 17 21 12 16 7"></polyline><line x1="21" y1="12" x2="9" y2="12"></line></svg>
+                <span style="color: #dc3545;">Keluar</span>
+            </div>
+        </div>
+    </div>
+
+    <!-- Script Utama Firebase & Logika -->
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
+        import { getAuth, createUserWithEmailAndPassword, signInWithEmailAndPassword, signOut, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
+        import { getFirestore, doc, setDoc, collection, getDocs, getDoc, deleteDoc, addDoc, updateDoc, increment, onSnapshot } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
+
+        const EMAIL_SUPER_ADMIN = "ferdianocktavianto90@gmail.com"; 
+
+        const firebaseConfig = {
+            apiKey: "AIzaSyBhwQpiFZcvt17_bJvDEEEEHNx1n2TheHI",
+            authDomain: "absen-qu.firebaseapp.com",
+            projectId: "absen-qu",
+            storageBucket: "absen-qu.firebasestorage.app",
+            messagingSenderId: "810825811270",
+            appId: "1:810825811270:web:66c345e1ab0bb8b2509147"
+        };
+
+        const app = initializeApp(firebaseConfig);
+        const auth = getAuth(app);
+        const db = getFirestore(app);
+
+        let currentOwnerId = null, countdownTimer = null, dataKaryawanMap = {}, rekapKehadiranTotalMap = {}, globalPaidLeaveMap = {};
+        let namaPerusahaanAktif = "PT PERUSAHAAN", html5QrcodeScanner = null, globalListRekap = [];
+        let unsubOwnerAbsensi = null, unsubOwnerCuti = null, unsubKarAbsensi = null, unsubKarCuti = null;
+
+        const showLoader = () => document.getElementById('global-loader').style.display = 'flex';
+        const hideLoader = () => document.getElementById('global-loader').style.display = 'none';
+
+        const mayarLinks = {
+            "1": "https://fer-tech.myr.id/pl/perpanjangan-sewa-absen-qu-1-bulan",
+            "3": "https://fer-tech.myr.id/pl/perpanjangan-sewa-absen-q-3-bulan",
+            "6": "https://fer-tech.myr.id/pl/perpanjangan-sewa-absen-qu-6-bulan",
+            "12": "https://fer-tech.myr.id/pl/perpanjangan-sewa-absen-qu-12-bulan"
+        };
+
+        window.hitungTotalOwner = () => {
+            const selectEl = document.getElementById('pilih-paket-owner');
+            const val = selectEl.value;
+            const selectedOption = selectEl.options[selectEl.selectedIndex];
+            const bulan = selectedOption.getAttribute('data-bulan') || "1";
+            document.getElementById('total-harga-owner').innerText = `Rp ${parseInt(val).toLocaleString('id-ID')}`;
+            document.getElementById('btn-mayar-owner').href = mayarLinks[bulan];
+        };
+
+        window.hitungTotalExpired = () => {
+            const selectEl = document.getElementById('pilih-paket-expired');
+            const val = selectEl.value;
+            const selectedOption = selectEl.options[selectEl.selectedIndex];
+            const bulan = selectedOption.getAttribute('data-bulan') || "1";
+            document.getElementById('total-harga-expired').innerText = `Rp ${parseInt(val).toLocaleString('id-ID')}`;
+            document.getElementById('btn-mayar-expired').href = mayarLinks[bulan];
+        };
+
+        window.updateNominalAdmin = (ownerId) => {
+            const select = document.getElementById(`select-sewa-${ownerId}`);
+            const nominalSpan = document.getElementById(`nominal-sewa-${ownerId}`);
+            if(select && nominalSpan) {
+                nominalSpan.innerText = `Rp ${parseInt(select.value).toLocaleString('id-ID')}`;
+            }
+        };
+
+        window.prosesPerpanjanganAdmin = async (ownerId) => {
+            const select = document.getElementById(`select-sewa-${ownerId}`);
+            if(!select) return;
+            const bulan = parseInt(select.getAttribute('data-bulan-val') || select.options[select.selectedIndex].getAttribute('data-bulan') || "1");
+            const nominal = parseInt(select.value);
+
+            const res = await Swal.fire({
+                title: 'Konfirmasi Perpanjangan',
+                text: `Perpanjang masa sewa selama ${bulan} Bulan dengan biaya Rp ${nominal.toLocaleString('id-ID')}?`,
+                icon: 'question',
+                showCancelButton: true,
+                confirmButtonText: 'Ya, Perpanjang'
+            });
+
+            if(res.isConfirmed) {
+                showLoader();
+                try {
+                    const docRef = doc(db, "owners", ownerId), docSnap = await getDoc(docRef);
+                    let expLama = docSnap.data().berlakuHingga ? docSnap.data().berlakuHingga.toDate() : new Date();
+                    if (expLama < new Date()) expLama = new Date(); 
+                    expLama.setMonth(expLama.getMonth() + bulan);
+                    await updateDoc(docRef, { berlakuHingga: expLama, statusSewa: 'Aktif', totalPendapatan: increment(nominal) });
+                    Swal.fire("Sukses", `Perpanjangan ${bulan} Bulan berhasil!`, "success"); 
+                    await muatDataKlienSuperAdmin();
+                } catch (err) { 
+                    Swal.fire("Gagal", err.message, "error"); 
+                } finally { 
+                    hideLoader(); 
+                }
+            }
+        };
+
+        window.bayarViaDanaOwner = () => {
+            const selectEl = document.getElementById('pilih-paket-owner');
+            const selectedOption = selectEl.options[selectEl.selectedIndex];
+            const namaPaket = selectedOption.text;
+            const totalHarga = document.getElementById('total-harga-owner').innerText;
+            const noWaAdmin = "6285719134016";
+            const pesan = `Halo Admin Absen Q, saya ingin konfirmasi pembayaran perpanjangan sewa untuk PT *${namaPerusahaanAktif}* (${namaPaket} — ${totalHarga}) via Transfer DANA ke nomor 085719134016. Berikut bukti transfernya:`;
+            window.open("https://link.dana.id", "_blank");
+            setTimeout(() => { window.open(`https://wa.me/${noWaAdmin}?text=${encodeURIComponent(pesan)}`, "_blank"); }, 1000);
+        };
+
+        window.bayarViaDanaExpired = () => {
+            const selectEl = document.getElementById('pilih-paket-expired');
+            const selectedOption = selectEl.options[selectEl.selectedIndex];
+            const namaPaket = selectedOption.text;
+            const totalHarga = document.getElementById('total-harga-expired').innerText;
+            const noWaAdmin = "6285719134016";
+            const pesan = `Halo Admin Absen Q, saya ingin konfirmasi pembayaran perpanjangan sewa akun yang expired (${namaPaket} — ${totalHarga}) via Transfer DANA ke nomor 085719134016. Berikut bukti transfernya:`;
+            window.open("https://link.dana.id", "_blank");
+            setTimeout(() => { window.open(`https://wa.me/${noWaAdmin}?text=${encodeURIComponent(pesan)}`, "_blank"); }, 1000);
+        };
+
+        window.tampilkanFoto = (imgSrc) => {
+            document.getElementById('img-modal-foto').src = imgSrc;
+            document.getElementById('modal-foto').style.display = 'flex';
+        };
+
+        function compressImageToDataURL(file, targetSizeKB = 100) {
+    return new Promise((resolve, reject) => {
+        const reader = new FileReader();
+        reader.readAsDataURL(file);
+        
+        reader.onload = (event) => {
+            const img = new Image();
+            img.src = event.target.result;
+            
+            img.onload = () => {
+                let canvas = document.createElement('canvas');
+                let ctx = canvas.getContext('2d');
+                
+                let width = img.width;
+                let height = img.height;
+                
+                // Pembatasan awal dimensi maksimum agar proses lebih cepat
+                const MAX_WIDTH = 1024;
+                if (width > MAX_WIDTH) {
+                    height = Math.round((height * MAX_WIDTH) / width);
+                    width = MAX_WIDTH;
+                }
+                
+                canvas.width = width;
+                canvas.height = height;
+                ctx.drawImage(img, 0, 0, width, height);
+                
+                let quality = 0.9;
+                let dataUrl = canvas.toDataURL('image/jpeg', quality);
+                
+                // Perhitungan batas aman Base64 (1 KB = 1024 bytes, format Base64 membesar ~33-35%)
+                const targetLength = targetSizeKB * 1024 * 1.35; 
+                
+                const compress = () => {
+                    if (dataUrl.length <= targetLength) {
+                        resolve(dataUrl);
+                    } else if (quality > 0.1) {
+                        // 1. Turunkan kualitas kompresi JPEG jika masih melebihi target
+                        quality -= 0.15;
+                        dataUrl = canvas.toDataURL('image/jpeg', quality);
+                        compress();
+                    } else if (width > 300) {
+                        // 2. Jika kualitas sudah batas bawah tapi size masih besar, turunkan resolusi 20%
+                        width = Math.round(width * 0.8);
+                        height = Math.round(height * 0.8);
+                        canvas.width = width;
+                        canvas.height = height;
+                        
+                        // Gambar ulang dan reset kompresi ke 80% untuk diulang
+                        ctx.drawImage(img, 0, 0, width, height);
+                        quality = 0.8; 
+                        dataUrl = canvas.toDataURL('image/jpeg', quality);
+                        compress();
+                    } else {
+                        // Mengembalikan hasil final jika sudah mentok di batas maksimal pengecilan
+                        resolve(dataUrl);
+                    }
+                };
+                
+                compress(); 
+            };
+            img.onerror = error => reject(error);
+        };
+        reader.onerror = error => reject(error);
+    });
+}
+
+        window.unduhCSVRekap = () => {
+            let table = document.getElementById("tabel-export-rekap"), rows = table.querySelectorAll("tr"), csvContent = "data:text/csv;charset=utf-8,";
+            rows.forEach((row) => {
+                let rowData = [];
+                row.querySelectorAll("th, td").forEach((cell) => rowData.push('"' + cell.innerText.replace(/(\r\n|\n|\r)/gm, " ").replace(/,/g, ";") + '"'));
+                csvContent += rowData.join(",") + "\r\n";
+            });
+            let link = document.createElement("a");
+            link.setAttribute("href", encodeURI(csvContent));
+            link.setAttribute("download", `Rekap_Absensi_${new Date().toISOString().slice(0,10)}.csv`);
+            document.body.appendChild(link); link.click(); document.body.removeChild(link);
+        };
+
+        window.cetakRekapPDF = () => {
+            const filterId = document.getElementById('filter-karyawan-rekap').value;
+            let listToRender = globalListRekap, judulTambahan = "Semua Karyawan";
+            if (filterId !== "ALL" && dataKaryawanMap[filterId]) {
+                listToRender = listToRender.filter(r => String(r.idKaryawan) === String(filterId));
+                judulTambahan = `${dataKaryawanMap[filterId].namaDepan} ${dataKaryawanMap[filterId].namaBelakang}`;
+            }
+            let htmlBaris = '';
+            listToRender.forEach(r => {
+                const jabatan = dataKaryawanMap[r.idKaryawan] ? dataKaryawanMap[r.idKaryawan].jabatan : '-';
+                htmlBaris += `<tr><td>${r.tgl}</td><td>${r.nama}</td><td>${jabatan}</td><td style="color:#28a745; font-weight:bold;">${r.jamMasuk}</td><td style="color:#dc3545; font-weight:bold;">${r.jamPulang}</td><td>Masuk: ${r.lokasiMasuk}<br>Pulang: ${r.lokasiPulang}</td><td>${r.fotoMasuk ? '✓ Ada' : '-'}</td></tr>`;
+            });
+            const win = window.open('', '_blank');
+            win.document.write(`<html><head><title>Rekap PDF</title><style>body{font-family:Arial;padding:20px;}table{width:100%;border-collapse:collapse;}th,td{border:1px solid #aaa;padding:8px;font-size:12px;}th{background:#f4f7f6;}</style></head><body><h2>Rekap Absensi - ${namaPerusahaanAktif}</h2><p>Filter: ${judulTambahan}</p><table><thead><tr><th>Tanggal</th><th>Nama</th><th>Jabatan</th><th>Masuk</th><th>Pulang</th><th>Lokasi</th><th>Foto</th></tr></thead><tbody>${htmlBaris}</tbody></table><script>window.print();<\/script></body></html>`);
+            win.document.close();
+        };
+
+        window.cetakSlipGajiPDF = () => {
+            const selectSlip = document.getElementById('select-karyawan-slip');
+            if (!selectSlip || !selectSlip.value || !dataKaryawanMap[selectSlip.value]) {
+                Swal.fire("Perhatian", "Pilih karyawan terlebih dahulu.", "warning"); return;
+            }
+            const kar = dataKaryawanMap[selectSlip.value];
+            const totalHadirFisik = rekapKehadiranTotalMap[kar.idKaryawan] || 0, paidLeave = globalPaidLeaveMap[kar.idKaryawan] || 0, totalKehadiranEfektif = totalHadirFisik + paidLeave;
+            const pTipe = kar.tipeGaji || 'Harian', pNominal = kar.nominalGaji || 0, gAkhir = kar.totalGajiAkhir || (pTipe === 'Harian' ? pNominal * totalKehadiranEfektif : pNominal);
+
+            const win = window.open('', '_blank');
+            win.document.write(`<html><head><title>Slip Gaji</title><style>body{font-family:Arial;padding:30px;}.box{border:2px solid #333;padding:20px;max-width:600px;margin:auto;}h2{text-align:center;}</style></head><body><div class="box"><h2>SLIP GAJI - ${namaPerusahaanAktif}</h2><p><strong>Nama:</strong> ${kar.namaDepan} ${kar.namaBelakang} (${kar.idKaryawan})</p><p><strong>Jabatan:</strong> ${kar.jabatan}</p><p><strong>Kehadiran:</strong> ${totalKehadiranEfektif} Hari</p><hr><p style="font-size:18px; font-weight:bold;">Total Terima: Rp ${Number(gAkhir).toLocaleString('id-ID')}</p></div><script>window.print();<\/script></body></html>`);
+            win.document.close();
+        };
+
+        const urlParams = new URLSearchParams(window.location.search), kodePTLink = urlParams.get('pt');
+
+        function resetAuthForms() {
+            ['login-form-container', 'daftar-form-container', 'karyawan-login-container'].forEach(id => document.getElementById(id).style.display = 'none');
+            if(html5QrcodeScanner) html5QrcodeScanner.clear().catch(() => {});
+        }
+
+        onAuthStateChanged(auth, async (user) => {
+            if (localStorage.getItem('karyawanAktif')) {
+                jalankanAplikasiKaryawan(JSON.parse(localStorage.getItem('karyawanAktif'))); return;
+            }
+            if (user) {
+                document.getElementById('auth-view').style.display = 'none';
+                if (user.email && user.email.toLowerCase() === EMAIL_SUPER_ADMIN.toLowerCase()) {
+                    document.getElementById('superadmin-view').style.display = 'flex';
+                    document.getElementById('owner-view').style.display = 'none';
+                    document.getElementById('expired-view').style.display = 'none';
+                    await muatDataKlienSuperAdmin(); hideLoader();
+                } else {
+                    currentOwnerId = user.uid;
+                    try {
+                        const docSnap = await getDoc(doc(db, "owners", user.uid));
+                        if (docSnap.exists()) {
+                            const dataOwner = docSnap.data();
+                            if (cekStatusExpired(dataOwner)) {
+                                document.getElementById('superadmin-view').style.display = 'none';
+                                document.getElementById('owner-view').style.display = 'none';
+                                document.getElementById('expired-view').style.display = 'flex';
+                                hideLoader(); return;
+                            }
+                            aturHitungMundurOwner(dataOwner);
+                            document.getElementById('expired-view').style.display = 'none';
+                            document.getElementById('superadmin-view').style.display = 'none';
+                            document.getElementById('owner-view').style.display = 'flex';
+
+                            document.querySelectorAll('.nav-link-ow').forEach(n => n.classList.remove('active'));
+                            document.querySelectorAll('.ow-section').forEach(s => s.classList.remove('active'));
+                            document.querySelector('.nav-link-ow[data-target="ow-dashboard"]').classList.add('active');
+                            document.getElementById('ow-dashboard').classList.add('active');
+                            document.getElementById('ow-page-title').innerText = "Grafik & Overview";
+
+                            const baseUrl = window.location.href.split('?')[0];
+                            document.getElementById('link-absen-pt').value = `${baseUrl}?pt=${currentOwnerId}`;
+                            document.getElementById('qr-code-pt-img').src = `https://api.qrserver.com/v1/create-qr-code/?size=220x220&data=${currentOwnerId}`;
+                            namaPerusahaanAktif = dataOwner.namaPerusahaan || "PT PERUSAHAAN";
+                            document.getElementById('owner-company-name').innerText = namaPerusahaanAktif;
+
+                            await muatDataKaryawan(); await muatDataAbsensiOwner(); hideLoader();
+                        } else hideLoader();
+                    } catch(e) { hideLoader(); }
+                }
+            } else {
+                ['superadmin-view', 'owner-view', 'employee-app', 'expired-view'].forEach(id => document.getElementById(id).style.display = 'none');
+                document.getElementById('auth-view').style.display = 'flex'; resetAuthForms();
+                if (kodePTLink) {
+                    document.getElementById('karyawan-login-container').style.display = 'block';
+                    
+                    const docOwner = await getDoc(doc(db, "owners", kodePTLink));
+                    let namaPtTampil = docOwner.exists() ? (docOwner.data().namaPerusahaan || "PT Perusahaan") : kodePTLink;
+
+                    const ptInput = document.getElementById('login-kar-pt');
+                    ptInput.value = namaPtTampil; 
+                    ptInput.setAttribute('data-owner-id', kodePTLink);
+
+                    document.getElementById('group-kode-pt').style.display = 'block'; 
+                    document.getElementById('group-id-kar').style.display = 'block';
+                    document.getElementById('btn-login-kar').style.display = 'block';
+                    document.getElementById('btn-start-scan').style.display = 'none'; 
+                    document.getElementById('balik-ke-owner').style.display = 'none';
+                } else document.getElementById('login-form-container').style.display = 'block';
+                currentOwnerId = null; if (countdownTimer) clearInterval(countdownTimer); hideLoader();
+            }
+        });
+
+        document.getElementById('link-ke-daftar').onclick = () => { resetAuthForms(); document.getElementById('daftar-form-container').style.display='block'; };
+        document.getElementById('link-ke-login').onclick = () => { resetAuthForms(); document.getElementById('login-form-container').style.display='block'; };
+        document.getElementById('link-ke-login-2').onclick = () => { resetAuthForms(); document.getElementById('login-form-container').style.display='block'; };
+        document.getElementById('link-ke-kar-login').onclick = () => { 
+            resetAuthForms(); document.getElementById('karyawan-login-container').style.display='block'; 
+            document.getElementById('btn-start-scan').style.display = 'block';
+        };
+
+        document.getElementById('btn-start-scan').addEventListener('click', async () => {
+            document.getElementById('qr-reader').style.display = 'block';
+            document.getElementById('btn-start-scan').style.display = 'none';
+            html5QrcodeScanner = new Html5QrcodeScanner("qr-reader", { fps: 10, qrbox: {width: 240, height: 240} }, false);
+            html5QrcodeScanner.render(async (decodedText) => {
+                const docOwner = await getDoc(doc(db, "owners", decodedText));
+                let namaPtTampil = docOwner.exists() ? (docOwner.data().namaPerusahaan || "PT Perusahaan") : decodedText;
+
+                const ptInput = document.getElementById('login-kar-pt');
+                ptInput.value = namaPtTampil;
+                ptInput.setAttribute('data-owner-id', decodedText);
+
+                document.getElementById('group-kode-pt').style.display = 'block'; 
+                document.getElementById('group-id-kar').style.display = 'block';
+                document.getElementById('btn-login-kar').style.display = 'block'; 
+                document.getElementById('qr-reader').style.display = 'none';
+                Swal.fire("Sukses", `Terhubung ke PT: ${namaPtTampil}`, "success"); 
+                html5QrcodeScanner.clear();
+            }, () => {});
+        });
+
+        document.getElementById('input-manual-pt').addEventListener('click', async () => {
+             const { value: manualPtId } = await Swal.fire({
+                 title: 'Masukkan Kode/ID PT Owner',
+                 input: 'text',
+                 inputPlaceholder: 'Contoh UID Owner...',
+                 showCancelButton: true
+             });
+             if(manualPtId) {
+                 const docOwner = await getDoc(doc(db, "owners", manualPtId));
+                 if(docOwner.exists()) {
+                     let namaPtTampil = docOwner.data().namaPerusahaan || "PT Perusahaan";
+                     const ptInput = document.getElementById('login-kar-pt');
+                     ptInput.value = namaPtTampil;
+                     ptInput.setAttribute('data-owner-id', manualPtId);
+
+                     document.getElementById('group-kode-pt').style.display = 'block'; 
+                     document.getElementById('group-id-kar').style.display = 'block';
+                     document.getElementById('btn-login-kar').style.display = 'block'; 
+                     document.getElementById('btn-start-scan').style.display = 'none';
+                     Swal.fire("Sukses", `Terhubung ke PT: ${namaPtTampil}`, "success");
+                 } else {
+                     Swal.fire("Gagal", "Kode PT tidak ditemukan dalam sistem.", "error");
+                 }
+             }
+        });
+        
+        function setupTogglePassword(inputId, toggleId) {
+            const input = document.getElementById(inputId);
+            const toggleBtn = document.getElementById(toggleId);
+            if(input && toggleBtn) {
+                toggleBtn.onclick = () => {
+                    const openPaths = toggleBtn.querySelectorAll('.eye-open');
+                    const closedPath = toggleBtn.querySelector('.eye-closed');
+                    if (input.type === 'password') {
+                        input.type = 'text';
+                        openPaths.forEach(p => p.style.display = 'none');
+                        closedPath.style.display = 'block';
+                    } else {
+                        input.type = 'password';
+                        openPaths.forEach(p => p.style.display = 'block');
+                        closedPath.style.display = 'none';
+                    }
+                };
+            }
+        }
+        setupTogglePassword('login-password', 'btn-toggle-pwd-login');
+        setupTogglePassword('reg-password', 'btn-toggle-pwd-reg');
+
+        function getWaktuExpired(dataOwner) {
+            if (dataOwner.berlakuHingga) return typeof dataOwner.berlakuHingga.toDate === 'function' ? dataOwner.berlakuHingga.toDate() : new Date(dataOwner.berlakuHingga);
+            let tglDaftar = dataOwner.terdaftarPada ? (typeof dataOwner.terdaftarPada.toDate === 'function' ? dataOwner.terdaftarPada.toDate() : new Date(dataOwner.terdaftarPada)) : new Date();
+            let exp = new Date(tglDaftar); exp.setDate(exp.getDate() + 7); return exp;
+        }
+
+        function cekStatusExpired(dataOwner) { return new Date() > getWaktuExpired(dataOwner); }
+
+        function aturHitungMundurOwner(dataOwner) {
+            const exp = getWaktuExpired(dataOwner), selisihMs = exp - new Date(), jam8 = 8 * 3600 * 1000;
+            if (countdownTimer) clearInterval(countdownTimer);
+            document.getElementById('peringatan-sewa').style.display = 'none';
+            if (selisihMs > 0 && selisihMs <= jam8) {
+                document.getElementById('peringatan-sewa').style.display = 'block';
+                countdownTimer = setInterval(() => {
+                    let sisa = exp - new Date();
+                    if (sisa <= 0) { clearInterval(countdownTimer); window.location.reload(); return; }
+                    let h = Math.floor(sisa / 3600000), m = Math.floor((sisa % 3600000) / 60000), s = Math.floor((sisa % 60000) / 1000);
+                    document.getElementById('waktu-mundur-sewa').innerText = `${h} Jam ${m} Menit ${s} Detik`;
+                }, 1000);
+            }
+        }
+
+        document.getElementById('form-daftar').addEventListener('submit', async (e) => {
+            e.preventDefault(); showLoader();
+            try {
+                const cred = await createUserWithEmailAndPassword(auth, document.getElementById('reg-email').value, document.getElementById('reg-password').value);
+                await setDoc(doc(db, "owners", cred.user.uid), {
+                    namaDepan: document.getElementById('reg-nama-depan').value, namaBelakang: document.getElementById('reg-nama-belakang').value,
+                    namaPerusahaan: document.getElementById('reg-pt').value, alamat: document.getElementById('reg-alamat').value,
+                    noTlp: document.getElementById('reg-tlp').value, email: document.getElementById('reg-email').value, terdaftarPada: new Date(), statusSewa: 'Trial', totalPendapatan: 0
+                });
+                Swal.fire("Berhasil", "Pendaftaran PT sukses! Nikmati 7 Hari Free Trial.", "success");
+                document.getElementById('form-daftar').reset(); resetAuthForms(); document.getElementById('login-form-container').style.display = 'block';
+            } catch (error) { Swal.fire("Gagal", error.message, "error"); } finally { hideLoader(); }
+        });
+
+        document.getElementById('form-login').addEventListener('submit', async (e) => {
+            e.preventDefault(); showLoader();
+            try { await signInWithEmailAndPassword(auth, document.getElementById('login-email').value, document.getElementById('login-password').value); } 
+            catch (error) { Swal.fire("Gagal", "Periksa kembali email dan password Anda.", "error"); hideLoader(); } 
+        });
+
+        document.querySelectorAll('.btn-logout-global').forEach(btn => {
+            btn.addEventListener('click', () => { 
+                Swal.fire({
+                    title: 'Keluar Akun?', text: "Anda akan keluar dari sesi ini.", icon: 'warning',
+                    showCancelButton: true, confirmButtonText: 'Ya, Keluar', cancelButtonText: 'Batal'
+                }).then((res) => {
+                    if(res.isConfirmed) { if(unsubOwnerAbsensi) unsubOwnerAbsensi(); if(unsubOwnerCuti) unsubOwnerCuti(); showLoader(); signOut(auth); }
+                });
+            });
+        });
+
+        document.querySelectorAll('.nav-link-sa').forEach(link => { link.addEventListener('click', (e) => { document.querySelectorAll('.nav-link-sa').forEach(n => n.classList.remove('active')); document.querySelectorAll('.sa-section').forEach(s => s.classList.remove('active')); e.target.classList.add('active'); document.getElementById(e.target.getAttribute('data-target')).classList.add('active'); document.getElementById('sa-page-title').innerText = e.target.innerText; }); });
+        document.querySelectorAll('.nav-link-ow').forEach(link => { link.addEventListener('click', (e) => { document.querySelectorAll('.nav-link-ow').forEach(n => n.classList.remove('active')); document.querySelectorAll('.ow-section').forEach(s => s.classList.remove('active')); e.target.classList.add('active'); document.getElementById(e.target.getAttribute('data-target')).classList.add('active'); document.getElementById('ow-page-title').innerText = e.target.innerText; }); });
+
+        async function muatDataKlienSuperAdmin() {
+            const tabel = document.getElementById('tabel-data-klien');
+            try {
+                const snap = await getDocs(collection(db, "owners"));
+                let html = '', count = 0, totalUangSewa = 0;
+                snap.forEach(docSnap => { 
+                    const d = docSnap.data(); count++; if (d.totalPendapatan) totalUangSewa += d.totalPendapatan;
+                    let exp = getWaktuExpired(d), selisihMs = exp - new Date(), isExpired = selisihMs <= 0;
+                    let statusBadge = isExpired ? `<span class="badge bg-danger">Expired</span>` : `<span class="badge bg-success">Aktif</span>`;
+                    let sisaInfo = "";
+                    if (isExpired) {
+                        sisaInfo = `<span style="color:#dc3545; font-size:12px; font-weight:bold;">Masa sewa habis</span>`;
+                    } else {
+                        let sisaHari = Math.floor(selisihMs / (1000 * 60 * 60 * 24));
+                        let sisaJam = Math.floor((selisihMs % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
+                        sisaInfo = `<span style="color:#28a745; font-size:12px; font-weight:bold;">${sisaHari} Hari ${sisaJam} Jam</span>`;
+                    }
+
+                    html += `<tr>
+                        <td>${d.namaPerusahaan || '-'}</td>
+                        <td>${d.namaDepan} ${d.namaBelakang}</td>
+                        <td>${d.email}</td>
+                        <td>${d.noTlp}</td>
+                        <td style="text-align:center;">${statusBadge}</td>
+                        <td>${sisaInfo}</td>
+                        <td>
+                            <div style="display: flex; flex-direction: column; gap: 5px; min-width: 170px;">
+                                <select id="select-sewa-${docSnap.id}" onchange="updateNominalAdmin('${docSnap.id}')" style="padding: 6px; border-radius: 6px; border: 1px solid #ced4da; font-size: 13px;">
+                                    <option value="150000" data-bulan="1">1 Bulan</option>
+                                    <option value="399000" data-bulan="3">3 Bulan</option>
+                                    <option value="750000" data-bulan="6">6 Bulan</option>
+                                    <option value="1500000" data-bulan="12">12 Bulan</option>
+                                </select>
+                                <div style="display: flex; justify-content: space-between; align-items: center; font-size: 12px;">
+                                    <span id="nominal-sewa-${docSnap.id}" style="font-weight: bold; color: #0056b3;">Rp 150.000</span>
+                                    <button class="btn-action bg-success" style="margin:0; padding: 4px 10px;" onclick="prosesPerpanjanganAdmin('${docSnap.id}')">Proses</button>
+                                </div>
+                            </div>
+                        </td>
+                        <td style="text-align:center;">
+                            <button class="btn-action bg-danger btn-suspend-sewa" data-id="${docSnap.id}">Suspend</button>
+                        </td>
+                    </tr>`; 
+                });
+                tabel.innerHTML = count > 0 ? html : '<tr><td colspan="8" align="center">Belum ada klien</td></tr>';
+                document.getElementById('total-klien-aktif').innerText = count; document.getElementById('sa-total-pendapatan').innerText = `Rp ${totalUangSewa.toLocaleString('id-ID')}`;
+            } catch (err) { tabel.innerHTML = `<tr><td colspan="8" align="center">Error memuat data</td></tr>`; }
+        }
+
+        document.getElementById('tabel-data-klien').addEventListener('click', async (e) => {
+            if (e.target.classList.contains('btn-suspend-sewa')) {
+                const ownerId = e.target.getAttribute('data-id');
+                const res = await Swal.fire({ title: 'Suspend Klien?', text: "Klien tidak akan bisa mengakses aplikasi.", icon: 'warning', showCancelButton: true, confirmButtonText: 'Ya, Suspend' });
+                if (res.isConfirmed) {
+                    showLoader();
+                    try {
+                        let kemarin = new Date(); kemarin.setDate(kemarin.getDate() - 1);
+                        await updateDoc(doc(db, "owners", ownerId), { statusSewa: 'Expired', berlakuHingga: kemarin });
+                        Swal.fire("Berhasil", "Klien berhasil di-suspend.", "success"); await muatDataKlienSuperAdmin();
+                    } catch (err) { Swal.fire("Gagal", err.message, "error"); } finally { hideLoader(); }
+                }
+            }
+        });
+
+        document.getElementById('form-add-karyawan').addEventListener('submit', async (e) => {
+            e.preventDefault(); if (!currentOwnerId) return; showLoader(); const idKar = document.getElementById('kar-id').value; 
+            try {
+                await setDoc(doc(db, "owners", currentOwnerId, "karyawan", idKar), {
+                    namaDepan: document.getElementById('kar-nama-depan').value, namaBelakang: document.getElementById('kar-nama-belakang').value,
+                    jabatan: document.getElementById('kar-jabatan').value, email: document.getElementById('kar-email').value,
+                    username: document.getElementById('kar-username').value, idKaryawan: idKar, didaftarkanPada: Date.now()
+                });
+                Swal.fire("Berhasil", "Data Karyawan Disimpan!", "success"); document.getElementById('form-add-karyawan').reset(); await muatDataKaryawan(); 
+            } catch (error) { Swal.fire("Gagal", error.message, "error"); } finally { hideLoader(); }
+        });
+
+        async function muatDataKaryawan() {
+            if (!currentOwnerId) return;
+            const tabel = document.getElementById('tabel-data-karyawan'), selectSlip = document.getElementById('select-karyawan-slip'), selectFilterRekap = document.getElementById('filter-karyawan-rekap');
+            dataKaryawanMap = {}; 
+            try {
+                const querySnapshot = await getDocs(collection(db, "owners", currentOwnerId, "karyawan"));
+                let htmlTabel = '', htmlSelect = '';
+                querySnapshot.forEach((docSnap) => {
+                    const k = docSnap.data(); dataKaryawanMap[k.idKaryawan] = k; const namaLengkap = `${k.namaDepan} ${k.namaBelakang}`;
+                    htmlTabel += `<tr><td>${namaLengkap}</td><td>${k.username}</td><td>${k.idKaryawan}</td><td>${k.jabatan}</td>
+                        <td><button class="btn-action bg-warning btn-edit-kar" data-id="${k.idKaryawan}" data-jabatan="${k.jabatan}">Edit</button> <button class="btn-action bg-danger btn-hapus-kar" data-id="${k.idKaryawan}">Hapus</button></td></tr>`;
+                    htmlSelect += `<option value="${k.idKaryawan}">${namaLengkap} (${k.idKaryawan})</option>`;
+                });
+                tabel.innerHTML = htmlTabel || '<tr><td colspan="5" align="center">Belum ada karyawan.</td></tr>';
+                selectSlip.innerHTML = '<option value="">Pilih Karyawan...</option>' + htmlSelect;
+                selectFilterRekap.innerHTML = '<option value="ALL">Semua Karyawan</option>' + htmlSelect;
+            } catch (error) {}
+        }
+
+        // Perbaikan Edit Jabatan menggunakan Dropdown Select
+        document.getElementById('tabel-data-karyawan').addEventListener('click', async (e) => {
+            if (e.target.classList.contains('btn-edit-kar')) {
+                const idKar = e.target.getAttribute('data-id'), currJabatan = e.target.getAttribute('data-jabatan');
+                
+                const { value: newJabatan } = await Swal.fire({
+                    title: 'Edit Jabatan',
+                    input: 'select',
+                    inputOptions: {
+                        'Mandor': 'Mandor',
+                        'Tukang': 'Tukang',
+                        'Kenek': 'Kenek',
+                        'Admin': 'Admin',
+                        'Kasir': 'Kasir',
+                        'Gudang': 'Gudang',
+                        'Sales': 'Sales',
+                        'Kurir': 'Kurir',
+                        'Staff': 'Staff'
+                    },
+                    inputValue: currJabatan,
+                    showCancelButton: true,
+                    confirmButtonText: 'Simpan',
+                    cancelButtonText: 'Batal'
+                });
+
+                if (newJabatan && newJabatan !== currJabatan) {
+                    showLoader(); 
+                    try { 
+                        await updateDoc(doc(db, "owners", currentOwnerId, "karyawan", idKar), { jabatan: newJabatan }); 
+                        Swal.fire("Sukses", "Jabatan berhasil diperbarui", "success"); 
+                        await muatDataKaryawan(); 
+                    } catch (err) { 
+                        Swal.fire("Gagal", err.message, "error"); 
+                    } finally { 
+                        hideLoader(); 
+                    }
+                }
+            }
+            if (e.target.classList.contains('btn-hapus-kar')) {
+                const idKar = e.target.getAttribute('data-id');
+                const res = await Swal.fire({ title: 'Hapus Karyawan?', icon: 'warning', showCancelButton: true, confirmButtonText: 'Ya, Hapus' });
+                if (res.isConfirmed) {
+                    showLoader(); try { await deleteDoc(doc(db, "owners", currentOwnerId, "karyawan", idKar)); Swal.fire("Sukses", "Karyawan dihapus", "success"); await muatDataKaryawan(); } catch (err) { Swal.fire("Gagal", err.message, "error"); } finally { hideLoader(); }
+                }
+            }
+        });
+
+        let chartInstance = null;
+        function renderGrafikOwner(labels = ['Senin', 'Selasa', 'Rabu', 'Kamis', 'Jumat', 'Sabtu', 'Minggu'], dataMasuk = [0,0,0,0,0,0,0], dataIzin = [0,0,0,0,0,0,0]) {
+            if (typeof Chart === 'undefined') return; const ctx = document.getElementById('grafikAbsensi').getContext('2d');
+            if(chartInstance) chartInstance.destroy(); 
+            chartInstance = new Chart(ctx, { type: 'bar', data: { labels: labels, datasets: [ { label: 'Masuk Kerja', data: dataMasuk, backgroundColor: '#28a745' }, { label: 'Sakit/Izin/Cuti', data: dataIzin, backgroundColor: '#dc3545' } ] }, options: { responsive: true, maintainAspectRatio: false, scales: { y: { beginAtZero: true, ticks: { precision: 0 } } } } });
+        }
+
+        window.hitungGajiManual = async (idKar, totalKehadiranEfektif) => {
+            const tipe = document.getElementById(`tipe-gaji-${idKar}`).value, nominal = parseFloat(document.getElementById(`nom-gaji-${idKar}`).value) || 0;
+            let total = tipe === 'Harian' ? nominal * totalKehadiranEfektif : nominal;
+            showLoader();
+            try {
+                await updateDoc(doc(db, "owners", currentOwnerId, "karyawan", idKar), { tipeGaji: tipe, nominalGaji: nominal, totalGajiAkhir: total });
+                Swal.fire("Sukses", "Gaji berhasil diperbarui", "success"); await muatDataKaryawan();
+            } catch (err) { Swal.fire("Gagal", err.message, "error"); } finally { hideLoader(); }
+        };
+
+        window.terapkanFilterRekap = () => {
+            const filterId = document.getElementById('filter-karyawan-rekap').value; let listToRender = globalListRekap;
+            if (filterId !== "ALL") listToRender = listToRender.filter(r => String(r.idKaryawan) === String(filterId));
+            let htmlRekap = '';
+            listToRender.forEach(r => {
+                const jabatan = dataKaryawanMap[r.idKaryawan] ? dataKaryawanMap[r.idKaryawan].jabatan : '-';
+                htmlRekap += `<tr><td>${r.tgl}</td><td>${r.nama}</td><td>${jabatan}</td><td style="color:#28a745; font-weight:bold;">${r.jamMasuk}</td><td style="color:#dc3545; font-weight:bold;">${r.jamPulang}</td><td>Masuk: ${r.lokasiMasuk}<br>Pulang: ${r.lokasiPulang}</td><td>${r.fotoMasuk ? `<img src="${r.fotoMasuk}" onclick="window.tampilkanFoto(this.src)" style="width:32px; height:32px; object-fit:cover; border-radius:4px; cursor:pointer;">` : '-'}</td></tr>`;
+            });
+            document.getElementById('tabel-rekap-owner').innerHTML = listToRender.length > 0 ? htmlRekap : '<tr><td colspan="7" align="center">Data kosong</td></tr>';
+        };
+
+        async function muatDataAbsensiOwner() {
+            if(!currentOwnerId) return;
+            if (unsubOwnerAbsensi) unsubOwnerAbsensi(); if (unsubOwnerCuti) unsubOwnerCuti();
+            const labelsGrafik = ['Senin', 'Selasa', 'Rabu', 'Kamis', 'Jumat', 'Sabtu', 'Minggu'];
+            let ownerChartData = { masuk: [0,0,0,0,0,0,0], izin: [0,0,0,0,0,0,0] };
+
+            try {
+                unsubOwnerCuti = onSnapshot(collection(db, "owners", currentOwnerId, "cuti"), (snapCuti) => {
+                    const optionsTgl = { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' };
+                    const hariIni = new Date().toLocaleDateString('id-ID', optionsTgl), tanggalSingkatIni = new Date().toISOString().split('T')[0];
+                    let htmlCuti = '', countCuti = 0, izinMingguan = { 'Senin':0, 'Selasa':0, 'Rabu':0, 'Kamis':0, 'Jumat':0, 'Sabtu':0, 'Minggu':0 }, totalSakitIzinHariIni = new Set();
+                    globalPaidLeaveMap = {};
+
+                    snapCuti.forEach(docSnap => {
+                        countCuti++; const c = docSnap.data(); let st = c.status || "Menunggu";
+                        if(st === "Diterima" && (c.tipe === "Cuti" || (c.tipe === "Sakit" && c.fotoSKD))) globalPaidLeaveMap[c.idKaryawan] = (globalPaidLeaveMap[c.idKaryawan] || 0) + 1;
+                        let linkSKD = c.fotoSKD ? `<br><a href="javascript:void(0)" onclick="window.tampilkanFoto('${c.fotoSKD}')" style="color:#007BFF; text-decoration:underline;">Lihat SKD</a>` : '';
+                        htmlCuti += `<tr><td>${c.tanggalIzin || c.tglPengajuan}</td><td>${c.nama} | ${c.idKaryawan}</td><td>[${c.tipe}] ${c.alasan} ${linkSKD}</td><td><span class="badge ${st === 'Diterima' ? 'bg-success' : (st === 'Ditolak' ? 'bg-danger' : 'bg-warning')}">${st}</span></td><td><button class="btn-action bg-success btn-acc-cuti" data-id="${docSnap.id}">Setujui</button> <button class="btn-action bg-danger btn-tolak-cuti" data-id="${docSnap.id}">Tolak</button></td></tr>`;
+                        if (c.tglPengajuan && st !== "Ditolak") {
+                            const namaHari = c.tglPengajuan.split(',')[0].trim();
+                            if (izinMingguan[namaHari] !== undefined) izinMingguan[namaHari]++;
+                            if (c.tanggalIzin === tanggalSingkatIni || c.tglPengajuan === hariIni) totalSakitIzinHariIni.add(c.idKaryawan);
+                        }
+                    });
+                    document.getElementById('tabel-cuti-owner').innerHTML = countCuti > 0 ? htmlCuti : '<tr><td colspan="5" align="center">Belum ada pengajuan</td></tr>';
+                    document.getElementById('ow-stat-izin').innerText = `${totalSakitIzinHariIni.size} Orang`;
+                    ownerChartData.izin = labelsGrafik.map(h => izinMingguan[h]);
+                    renderGrafikOwner(labelsGrafik, ownerChartData.masuk, ownerChartData.izin);
+                });
+
+                unsubOwnerAbsensi = onSnapshot(collection(db, "owners", currentOwnerId, "absensi"), (snapAbsen) => {
+                    const optionsTgl = { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' };
+                    const hariIni = new Date().toLocaleDateString('id-ID', optionsTgl), tanggalSingkatIni = new Date().toISOString().split('T')[0];
+                    let countAbsen = 0, masukMingguan = { 'Senin':0, 'Selasa':0, 'Rabu':0, 'Kamis':0, 'Jumat':0, 'Sabtu':0, 'Minggu':0 }, totalKaryawanMasukHariIni = new Set();
+                    let groupedLaporan = {}, groupedRekap = {}, rekapHariUnik = {};
+
+                    snapAbsen.forEach(docSnap => {
+                        countAbsen++; const a = docSnap.data(), key = `${a.tgl}_${a.idKaryawan}`;
+                        if (!rekapHariUnik[a.idKaryawan]) rekapHariUnik[a.idKaryawan] = new Set(); if (a.tgl) rekapHariUnik[a.idKaryawan].add(a.tgl);
+                        if (!groupedLaporan[key]) groupedLaporan[key] = { tgl: a.tgl, nama: a.nama, idKaryawan: a.idKaryawan, jamMasuk: '-', jamPulang: '-', keterangan: 'Hadir' };
+                        
+                        if (a.tipe === "MASUK") {
+                            groupedLaporan[key].jamMasuk = a.jamMasuk || a.jam || '-';
+                            if (a.tgl === hariIni || a.tanggalSingkat === tanggalSingkatIni) totalKaryawanMasukHariIni.add(a.idKaryawan);
+                            const namaHari = a.tgl ? a.tgl.split(',')[0].trim() : ''; if (masukMingguan[namaHari] !== undefined) masukMingguan[namaHari]++;
+                        }
+                        if (a.tipe === "PULANG") {
+                            groupedLaporan[key].jamPulang = a.jamPulang || a.jam || '-';
+                        }
+                        if (a.tipe === "LIBUR") {
+                            groupedLaporan[key].jamMasuk = '00:00:00';
+                            groupedLaporan[key].jamPulang = '00:00:00';
+                            groupedLaporan[key].keterangan = 'Libur';
+                        }
+
+                        if (!groupedRekap[key]) groupedRekap[key] = { tgl: a.tgl, nama: a.nama, idKaryawan: a.idKaryawan, jamMasuk: '-', fotoMasuk: '', lokasiMasuk: '-', jamPulang: '', fotoPulang: '', lokasiPulang: '-' };
+                        if (a.tipe === "MASUK") { groupedRekap[key].jamMasuk = a.jamMasuk || a.jam || '-'; if(a.foto) groupedRekap[key].fotoMasuk = a.foto; if(a.lokasi) groupedRekap[key].lokasiMasuk = a.lokasi; }
+                        if (a.tipe === "PULANG") { groupedRekap[key].jamPulang = a.jamPulang || a.jam || '-'; if(a.foto) groupedRekap[key].fotoPulang = a.foto; if(a.lokasi) groupedRekap[key].lokasiPulang = a.lokasi; }
+                        if (a.tipe === "LIBUR") { groupedRekap[key].jamMasuk = '00:00:00'; groupedRekap[key].jamPulang = '00:00:00'; }
+                    });
+
+                    rekapKehadiranTotalMap = {}; for (const id in rekapHariUnik) rekapKehadiranTotalMap[id] = rekapHariUnik[id].size;
+                    globalListRekap = Object.values(groupedRekap);
+
+                    let htmlLaporan = ''; Object.values(groupedLaporan).forEach(g => { 
+                        let badgeKet = g.keterangan === 'Libur' ? '<span class="badge bg-danger">Libur</span>' : '<span class="badge bg-success">Hadir</span>';
+                        htmlLaporan += `<tr><td>${g.tgl}</td><td>${g.nama} | ${g.idKaryawan}</td><td>${g.jamMasuk}</td><td>${g.jamPulang}</td><td>${badgeKet}</td></tr>`; 
+                    });
+                    document.getElementById('tabel-laporan-owner').innerHTML = htmlLaporan || '<tr><td colspan="5" align="center">Belum ada absen</td></tr>';
+                    window.terapkanFilterRekap();
+
+                    let htmlGaji = '', akumulasiGaji = 0;
+                    for (const idKar in dataKaryawanMap) {
+                        const kar = dataKaryawanMap[idKar], totalHadir = rekapKehadiranTotalMap[idKar] || 0, paidLeave = globalPaidLeaveMap[idKar] || 0, efektif = totalHadir + paidLeave;
+                        let pTipe = kar.tipeGaji || 'Harian', pNominal = kar.nominalGaji || 0, gajiHitung = pTipe === 'Harian' ? pNominal * efektif : pNominal;
+                        akumulasiGaji += gajiHitung;
+                        htmlGaji += `<tr><td>${kar.namaDepan} ${kar.namaBelakang}</td><td>${kar.idKaryawan}</td><td>${kar.jabatan}</td><td>${efektif} Hari</td><td><select id="tipe-gaji-${kar.idKaryawan}"><option value="Harian" ${pTipe==='Harian'?'selected':''}>Harian</option><option value="Bulanan" ${pTipe==='Bulanan'?'selected':''}>Bulanan</option></select></td><td><input type="number" id="nom-gaji-${kar.idKaryawan}" value="${pNominal}" style="width:90px;"></td><td style="color:#28a745; font-weight:bold;">Rp ${gajiHitung.toLocaleString('id-ID')}</td><td><button class="btn-action bg-info" onclick="window.hitungGajiManual('${kar.idKaryawan}', ${efektif})">Simpan</button></td></tr>`;
+                    }
+                    document.getElementById('tabel-penggajian-owner').innerHTML = htmlGaji || '<tr><td colspan="8" align="center">Belum ada karyawan</td></tr>';
+                    document.getElementById('ow-stat-gaji').innerText = `Rp ${akumulasiGaji.toLocaleString('id-ID')}`;
+                    document.getElementById('ow-stat-masuk').innerText = `${totalKaryawanMasukHariIni.size} Orang`;
+                    ownerChartData.masuk = labelsGrafik.map(h => masukMingguan[h]);
+                    renderGrafikOwner(labelsGrafik, ownerChartData.masuk, ownerChartData.izin);
+                });
+            } catch(e) {}
+        }
+
+        document.getElementById('tabel-cuti-owner').addEventListener('click', async (e) => {
+            if (e.target.classList.contains('btn-acc-cuti') || e.target.classList.contains('btn-tolak-cuti')) {
+                const docId = e.target.getAttribute('data-id'), statusVal = e.target.classList.contains('btn-acc-cuti') ? "Diterima" : "Ditolak";
+                showLoader(); try { await updateDoc(doc(db, "owners", currentOwnerId, "cuti", docId), { status: statusVal }); Swal.fire("Sukses", `Pengajuan berhasil ${statusVal}`, "success"); } catch (err) { Swal.fire("Gagal", err.message, "error"); } finally { hideLoader(); }
+            }
+        });
+
+        document.getElementById('form-login-karyawan').addEventListener('submit', async (e) => {
+            e.preventDefault(); 
+            const ptInputEl = document.getElementById('login-kar-pt');
+            const ptId = ptInputEl.getAttribute('data-owner-id') || ptInputEl.value.trim(); 
+            const karId = document.getElementById('login-kar-id').value.trim(); 
+            
+            showLoader();
+            try {
+                const docOwner = await getDoc(doc(db, "owners", ptId));
+                if (!docOwner.exists()) {
+                    Swal.fire("Gagal", "ID/Kode PT Owner tidak valid atau tidak ditemukan.", "error");
+                    hideLoader();
+                    return;
+                }
+                if (cekStatusExpired(docOwner.data())) { 
+                    Swal.fire("Akses Ditolak", "Masa sewa PT ini telah berakhir.", "error"); 
+                    hideLoader(); 
+                    return; 
+                }
+                const docSnap = await getDoc(doc(db, "owners", ptId, "karyawan", karId));
+                if (docSnap.exists()) {
+                    const karData = docSnap.data();
+                    const dataKaryawan = { 
+                        ownerId: ptId, 
+                        idKaryawan: karId, 
+                        nama: `${karData.namaDepan} ${karData.namaBelakang}`,
+                        namaPt: docOwner.data().namaPerusahaan || "PT Perusahaan" 
+                    };
+                    localStorage.setItem('karyawanAktif', JSON.stringify(dataKaryawan)); 
+                    jalankanAplikasiKaryawan(dataKaryawan);
+                } else { 
+                    Swal.fire("Gagal", "ID Karyawan tidak terdaftar di PT ini.", "error"); 
+                    hideLoader(); 
+                }
+            } catch (error) { 
+                Swal.fire("Gagal", "Kesalahan jaringan: " + error.message, "error"); 
+                hideLoader(); 
+            }
+        });
+
+        document.getElementById('input-tipe-cuti').addEventListener('change', (e) => {
+            document.getElementById('wrap-skd').style.display = e.target.value === 'Sakit' ? 'block' : 'none';
+        });
+
+        let koordinatGPS = "Lokasi belum didapatkan", tipeAbsenPilihan = '';
+        const inputKameraSistem = document.createElement('input'); inputKameraSistem.type = 'file'; inputKameraSistem.accept = 'image/*'; inputKameraSistem.capture = 'user';
+        
+        inputKameraSistem.addEventListener('change', (e) => {
+            const file = e.target.files[0]; if (!file) return;
+            showLoader();
+            compressImageToDataURL(file).then(base64 => simpanAbsenDenganSelfie(tipeAbsenPilihan, base64));
+        });
+
+        // Fungsi Generator Tahun Otomatis Real-Time
+        function generateOpsiTahun() {
+            const selectTahun = document.getElementById('filter-history-tahun');
+            if (!selectTahun) return;
+            
+            const tahunSekarang = new Date().getFullYear(); 
+            let opsiHTML = '';
+            
+            // Generate tahun berjalan mundur ke belakang sebanyak 5 tahun
+            for (let t = tahunSekarang; t >= tahunSekarang - 4; t--) {
+                opsiHTML += `<option value="${t}" ${t === tahunSekarang ? 'selected' : ''}>${t}</option>`;
+            }
+            
+            selectTahun.innerHTML = opsiHTML;
+        }
+
+        async function jalankanAplikasiKaryawan(data) {
+            document.querySelectorAll('#auth-view, #superadmin-view, #owner-view, #expired-view').forEach(el => el.style.display = 'none');
+            document.getElementById('employee-app').style.display = 'flex';
+            
+            // Jalankan generator tahun otomatis begitu aplikasi karyawan dimuat
+            generateOpsiTahun();
+
+            document.getElementById('app-kar-nama').innerText = data.nama; 
+            document.getElementById('app-kar-id').innerText = data.idKaryawan;
+            document.getElementById('app-kar-inisial').innerText = data.nama.charAt(0).toUpperCase();
+            document.getElementById('app-pt-nama').innerText = data.namaPt || "PT Perusahaan";
+            document.getElementById('app-kar-tgl').innerText = new Date().toLocaleDateString('id-ID', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' });
+
+            const storageKeyAbsen = `absen_cache_${data.idKaryawan}`;
+            let arrayRiwayat = JSON.parse(localStorage.getItem(storageKeyAbsen)) || [];
+
+            if (unsubKarAbsensi) unsubKarAbsensi();
+            unsubKarAbsensi = onSnapshot(collection(db, "owners", data.ownerId, "absensi"), (snap) => {
+                let sHist = []; snap.forEach(d => { if (d.data().idKaryawan === data.idKaryawan) sHist.push(d.data()); });
+                sHist.sort((a, b) => (a.timestamp || 0) - (b.timestamp || 0));
+                localStorage.setItem(storageKeyAbsen, JSON.stringify(sHist));
+                muatHistoryBulananKaryawan(sHist);
+            }, () => muatHistoryBulananKaryawan(arrayRiwayat));
+
+            if (unsubKarCuti) unsubKarCuti();
+            unsubKarCuti = onSnapshot(collection(db, "owners", data.ownerId, "cuti"), (snapCuti) => {
+                let statusHtml = `Belum ada pengajuan cuti atau izin.`;
+                snapCuti.forEach(docSnap => {
+                    const c = docSnap.data();
+                    if (String(c.idKaryawan) === String(data.idKaryawan)) {
+                        let st = c.status || "Menunggu";
+                        let badgeBg = st === 'Diterima' ? 'bg-success' : (st === 'Ditolak' ? 'bg-danger' : 'bg-warning');
+                        statusHtml = `<div style="display: flex; justify-content: space-between; align-items: center;">
+                            <div>
+                                <strong style="color: #333;">[${c.tipe}] ${c.tanggalIzin}</strong><br>
+                                <span style="font-size: 12px; color: #666;">Alasan: ${c.alasan}</span>
+                            </div>
+                            <span class="badge ${badgeBg}">${st}</span>
+                        </div>`;
+                    }
+                });
+                document.getElementById('status-cuti-karyawan').innerHTML = statusHtml;
+            });
+
+            navigator.geolocation.getCurrentPosition(
+                (pos) => { koordinatGPS = `${pos.coords.latitude}, ${pos.coords.longitude}`; document.getElementById('lokasi-gps').innerText = `Akurat: ${koordinatGPS}`; },
+                () => { document.getElementById('lokasi-gps').innerText = "Gagal mengambil GPS."; }
+            );
+
+            muatHistoryBulananKaryawan(arrayRiwayat);
+            hideLoader();
+        }
+
+        // PERBAIKAN: History Murni Menampilkan Data Absensi Asli dari Database (Tanpa Data Dummy Tanggal Kosong)
+        window.muatHistoryBulananKaryawan = (riwayatList) => {
+            const tahunVal = document.getElementById('filter-history-tahun').value;
+            const bulanVal = document.getElementById('filter-history-bulan').value;
+            const namaBulanArr = ["", "Januari", "Februari", "Maret", "April", "Mei", "Juni", "Juli", "Agustus", "September", "Oktober", "November", "Desember"];
+            
+            document.getElementById('info-rekap-periode').innerText = `Riwayat Absensi Bulan ${namaBulanArr[parseInt(bulanVal)]} Tahun ${tahunVal}`;
+            
+            // Filter riwayat hanya untuk bulan dan tahun yang dipilih
+            let filteredList = riwayatList.filter(item => {
+                let tglStr = item.tanggalSingkat || item.tgl || "";
+                return tglStr.startsWith(`${tahunVal}-${bulanVal}`);
+            });
+
+            // Grouping data berdasarkan tanggal
+            let groupedData = {};
+            filteredList.forEach(item => {
+                let tglKey = item.tanggalSingkat || item.tgl;
+                if (!groupedData[tglKey]) {
+                    groupedData[tglKey] = { tgl: tglKey, masuk: '-', pulang: '-', keterangan: 'Hadir', tipe: item.tipe };
+                }
+                if (item.tipe === 'MASUK') {
+                    groupedData[tglKey].masuk = item.jamMasuk || item.jam || '-';
+                }
+                if (item.tipe === 'PULANG') {
+                    groupedData[tglKey].pulang = item.jamPulang || item.jam || '-';
+                }
+                if (item.tipe === 'LIBUR') {
+                    groupedData[tglKey].masuk = '00:00:00';
+                    groupedData[tglKey].pulang = '00:00:00';
+                    groupedData[tglKey].keterangan = 'Libur';
+                }
+            });
+
+            let sortedKeys = Object.keys(groupedData).sort().reverse(); // Urutkan dari tanggal terbaru
+            let htmlTabel = '';
+            let totalHadirHitung = 0;
+
+            sortedKeys.forEach(tgl => {
+                let row = groupedData[tgl];
+                let ketBg = '#e8f5e9', ketColor = '#2e7d32';
+                if (row.keterangan === 'Libur') {
+                    ketBg = '#dc3545'; ketColor = '#fff';
+                } else {
+                    totalHadirHitung++;
+                }
+
+                htmlTabel += `<tr>
+                    <td style="font-weight: 600;">${row.tgl}</td>
+                    <td>${row.masuk}</td>
+                    <td>${row.pulang}</td>
+                    <td style="background-color: ${ketBg}; color: ${ketColor}; font-weight: bold; text-align: center;">${row.keterangan}</td>
+                </tr>`;
+            });
+
+            document.getElementById('tabel-history-karyawan').innerHTML = htmlTabel || '<tr><td colspan="4" style="text-align: center; color: #666;">Belum ada riwayat absensi pada periode ini.</td></tr>';
+            document.getElementById('stat-masuk').innerText = totalHadirHitung;
+        };
+
+        document.getElementById('btn-filter-history').onclick = () => {
+            const dataKar = JSON.parse(localStorage.getItem('karyawanAktif'));
+            if(dataKar) {
+                const storageKeyAbsen = `absen_cache_${dataKar.idKaryawan}`;
+                let arrayRiwayat = JSON.parse(localStorage.getItem(storageKeyAbsen)) || [];
+                muatHistoryBulananKaryawan(arrayRiwayat);
+            }
+        };
+
+        document.querySelectorAll('.bottom-nav-item').forEach(item => {
+            if (item.id === 'btn-logout-karyawan') return;
+            item.addEventListener('click', (e) => {
+                document.querySelectorAll('.bottom-nav-item').forEach(n => n.classList.remove('active'));
+                document.querySelectorAll('.emp-section').forEach(s => s.classList.remove('active'));
+                e.currentTarget.classList.add('active'); document.getElementById(e.currentTarget.getAttribute('data-target')).classList.add('active');
+            });
+        });
+
+        document.getElementById('btn-absen-masuk').onclick = () => { tipeAbsenPilihan = 'MASUK'; inputKameraSistem.click(); };
+        document.getElementById('btn-absen-pulang').onclick = () => { tipeAbsenPilihan = 'PULANG'; inputKameraSistem.click(); };
+        
+        document.getElementById('btn-absen-libur').onclick = async () => {
+            const res = await Swal.fire({
+                title: 'Catat Libur Hari Ini?',
+                text: 'Status hari ini akan dicatat sebagai Libur.',
+                icon: 'question',
+                showCancelButton: true,
+                confirmButtonText: 'Ya, Libur'
+            });
+            if(res.isConfirmed) {
+                showLoader();
+                const dataKar = JSON.parse(localStorage.getItem('karyawanAktif'));
+                const tgl = new Date().toLocaleDateString('id-ID', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' });
+                const tanggalSingkat = new Date().toISOString().split('T')[0];
+                const jam = new Date().toLocaleTimeString('id-ID') + " WIB";
+                const dataLibur = { idKaryawan: dataKar.idKaryawan, nama: dataKar.nama, tgl, tanggalSingkat, jam, tipe: 'LIBUR', lokasi: koordinatGPS, timestamp: Date.now() };
+                try {
+                    await addDoc(collection(db, "owners", dataKar.ownerId, "absensi"), dataLibur);
+                    Swal.fire("Berhasil", "Status Libur berhasil dicatat!", "success");
+                } catch (e) {
+                    Swal.fire("Gagal", e.message, "error");
+                } finally {
+                    hideLoader();
+                }
+            }
+        };
+
+        async function simpanAbsenDenganSelfie(tipe, base64) {
+            const dataKar = JSON.parse(localStorage.getItem('karyawanAktif'));
+            const tgl = new Date().toLocaleDateString('id-ID', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' });
+            const tanggalSingkat = new Date().toISOString().split('T')[0];
+            const jam = new Date().toLocaleTimeString('id-ID') + " WIB";
+            const dataAbsen = { idKaryawan: dataKar.idKaryawan, nama: dataKar.nama, tgl, tanggalSingkat, jam, tipe, lokasi: koordinatGPS, foto: base64, timestamp: Date.now() };
+            try {
+                await addDoc(collection(db, "owners", dataKar.ownerId, "absensi"), dataAbsen);
+                Swal.fire("Berhasil", `Absen ${tipe} tercatat!`, "success");
+            } catch (e) { Swal.fire("Gagal", e.message, "error"); } finally { hideLoader(); }
+        }
+
+        document.getElementById('btn-kirim-cuti').onclick = async () => {
+            const tipe = document.getElementById('input-tipe-cuti').value, tglIzin = document.getElementById('input-tgl-cuti').value, alasan = document.getElementById('input-alasan-cuti').value, fileSkd = document.getElementById('input-skd').files[0];
+            if(!tglIzin) { Swal.fire("Perhatian", "Pilih tanggal pengajuan terlebih dahulu.", "warning"); return; }
+            showLoader();
+            const dataKar = JSON.parse(localStorage.getItem('karyawanAktif'));
+            let fotoSKD = fileSkd ? await compressImageToDataURL(fileSkd) : null;
+            try {
+                await addDoc(collection(db, "owners", dataKar.ownerId, "cuti"), {
+                    idKaryawan: dataKar.idKaryawan, nama: dataKar.nama, tipe, tanggalIzin: tglIzin, alasan: alasan || 'Izin/Sakit', status: "Menunggu", fotoSKD, timestamp: Date.now()
+                });
+                Swal.fire("Berhasil", "Pengajuan berhasil dikirim.", "success");
+                document.getElementById('input-alasan-cuti').value = '';
+            } catch(e) { Swal.fire("Gagal", e.message, "error"); } finally { hideLoader(); }
+        };
+
+        document.getElementById('btn-logout-karyawan').onclick = () => {
+            Swal.fire({ title: 'Keluar?', icon: 'warning', showCancelButton: true, confirmButtonText: 'Ya' }).then(r => {
+                if(r.isConfirmed) { localStorage.removeItem('karyawanAktif'); window.location.reload(); }
+            });
+        };
+    </script>
+</body>
+</html>

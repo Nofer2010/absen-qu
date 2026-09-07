@@ -1,0 +1,22 @@
+{
+  "name": "Absen Q - Manajemen Absensi",
+  "short_name": "Absen Q",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#f4f7f6",
+  "theme_color": "#007BFF",
+  "orientation": "portrait",
+  "description": "Aplikasi manajemen absensi karyawan berbasis web dengan fitur selfie, anti-fake GPS, dan sinkronisasi real-time.",
+  "icons": [
+    {
+      "src": "./logo.png",
+      "sizes": "192x192",
+      "type": "image/png"
+    },
+    {
+      "src": "./logo.png",
+      "sizes": "512x512",
+      "type": "image/png"
+    }
+  ]
+}
